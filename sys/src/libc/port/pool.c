@@ -65,7 +65,7 @@ enum {
 	NOT_MAGIC = 0xdeadfa11,
 	DEAD_MAGIC = 0xdeaddead,
 };
-#define B2NB(b) ((Bhdr*)((uint8_t*)(b)+(b)->size))
+#define B2NB(b) ((Bhdr*)((uint8_t*)(b)+(b)->Bhdr.size))
 
 #define SHORT(x) (((x)[0] << 8) | (x)[1])
 #define PSHORT(p, x) \
@@ -82,11 +82,11 @@ struct Btail {
 	uint8_t	magic1;
 	uint32_t	size;	/* same as Bhdr->size */
 };
-#define B2T(b)	((Btail*)((uint8_t*)(b)+(b)->size-sizeof(Btail)))
+#define B2T(b)	((Btail*)((uint8_t*)(b)+(b)->Bhdr.size-sizeof(Btail)))
 #define B2PT(b) ((Btail*)((uint8_t*)(b)-sizeof(Btail)))
 #define T2HDR(t) ((Bhdr*)((uint8_t*)(t)+sizeof(Btail)-(t)->size))
 struct Free {
-			Bhdr;
+	Bhdr Bhdr;
 	Free*	left;
 	Free*	right;
 	Free*	next;
@@ -101,7 +101,7 @@ enum {
  * between Bhdr and Allocblk, and between Kempt and Unkempt.
  */
 struct Alloc {
-			Bhdr;
+			Bhdr Bhdr;
 };
 enum {
 	ALLOC_MAGIC = 0x0A110C09,
@@ -109,7 +109,7 @@ enum {
 };
 
 struct Arena {
-			Bhdr;
+	Bhdr Bhdr;
 	Arena*	aup;
 	Arena*	down;
 	uint32_t	asize;
@@ -209,25 +209,25 @@ checklist(Free *t)
 	Free *q;
 
 	for(q=t->next; q!=t; q=q->next){
-		assert(q->size == t->size);
+		assert(q->Bhdr.size == t->Bhdr.size);
 		assert(q->next==nil || q->next->prev==q);
 		assert(q->prev==nil || q->prev->next==q);
-		assert(q->magic==FREE_MAGIC);
+		assert(q->Bhdr.magic==FREE_MAGIC);
 	}
 }
 
 static void
 checktree(Free *t, int a, int b)
 {
-	assert(t->magic==FREE_MAGIC);
-	assert(a < t->size && t->size < b);
+	assert(t->Bhdr.magic==FREE_MAGIC);
+	assert(a < t->Bhdr.size && t->Bhdr.size < b);
 	assert(t->next==nil || t->next->prev==t);
 	assert(t->prev==nil || t->prev->next==t);
 	checklist(t);
 	if(t->left)
-		checktree(t->left, a, t->size);
+		checktree(t->left, a, t->Bhdr.size);
 	if(t->right)
-		checktree(t->right, t->size, b);
+		checktree(t->right, t->Bhdr.size, b);
 	
 }
 
@@ -241,11 +241,11 @@ ltreewalk(Free **t, uint32_t size)
 		if(*t == nil)
 			return t;
 
-		assert((*t)->magic == FREE_MAGIC);
+		assert((*t)->Bhdr.magic == FREE_MAGIC);
 
-		if(size == (*t)->size)
+		if(size == (*t)->Bhdr.size)
 			return t;
-		if(size < (*t)->size)
+		if(size < (*t)->Bhdr.size)
 			t = &(*t)->left;
 		else
 			t = &(*t)->right;
@@ -260,7 +260,7 @@ treeinsert(Free *tree, Free *node)
 
 	assert(node != nil /* treeinsert */);
 
-	loc = ltreewalk(&tree, node->size);
+	loc = ltreewalk(&tree, node->Bhdr.size);
 	if(*loc == nil) {
 		node->left = nil;
 		node->right = nil;
@@ -281,7 +281,7 @@ treedelete(Free *tree, Free *node)
 
 	assert(node != nil /* treedelete */);
 
-	loc = ltreewalk(&tree, node->size);
+	loc = ltreewalk(&tree, node->Bhdr.size);
 	assert(*loc == node);
 
 	if(node->left == nil)
@@ -313,9 +313,9 @@ treelookupgt(Free *t, uint32_t size)
 	for(;;) {
 		if(t == nil)
 			return lastgood;
-		if(size == t->size)
+		if(size == t->Bhdr.size)
 			return t;
-		if(size < t->size) {
+		if(size < t->Bhdr.size) {
 			lastgood = t;
 			t = t->left;
 		} else
@@ -381,17 +381,17 @@ pooladd(Pool *p, Alloc *anode)
 	Free **parent;
 
 	antagonism {
-		memmark(_B2D(anode), 0xF7, anode->size-sizeof(Bhdr)-sizeof(Btail));
+		memmark(_B2D(anode), 0xF7, anode->Bhdir.size-sizeof(Bhdr)-sizeof(Btail));
 	}
 
 	node = (Free*)anode;
-	node->magic = FREE_MAGIC;
-	parent = ltreewalk((Free **)&p->freeroot, node->size);
+	node->Bhdr.magic = FREE_MAGIC;
+	parent = ltreewalk((Free **)&p->freeroot, node->Bhdr.size);
 	olst = *parent;
 	lst = listadd(olst, node);
 	if(olst != lst)	/* need to update tree */
 		*parent = treeinsert(*parent, lst);
-	p->curfree += node->size;
+	p->curfree += node->Bhdr.size;
 	return node;
 }
 
@@ -402,7 +402,7 @@ pooldel(Pool *p, Free *node)
 	Free *lst, *olst;
 	Free **parent;
 
-	parent = ltreewalk((Free **)&p->freeroot, node->size);
+	parent = ltreewalk((Free **)&p->freeroot, node->Bhdr.size);
 	olst = *parent;
 	assert(olst != nil /* pooldel */);
 
@@ -413,13 +413,13 @@ pooldel(Pool *p, Free *node)
 		*parent = treeinsert(*parent, lst);
 
 	node->left = node->right = Poison;
-	p->curfree -= node->size;
+	p->curfree -= node->Bhdr.size;
 
 	antagonism {
-		memmark(_B2D(node), 0xF9, node->size-sizeof(Bhdr)-sizeof(Btail));
+		memmark(_B2D(node), 0xF9, node->Bhdr.size-sizeof(Bhdr)-sizeof(Btail));
 	}
 
-	node->magic = UNALLOC_MAGIC;
+	node->Bhdr.magic = UNALLOC_MAGIC;
 	return (Alloc*)node;
 }
 
@@ -503,7 +503,7 @@ getdsize(Alloc *b)
 {
 	Btail *t;
 	t = B2T(b);
-	return b->size - SHORT(t->datasize);
+	return b->Bhdir.size - SHORT(t->datasize);
 }
 
 /* blocksetdsize: set the user data size of a block */
@@ -513,11 +513,11 @@ blocksetdsize(Pool *p, Alloc *b, uint32_t dsize)
 	Btail *t;
 	uint8_t *q, *eq;
 
-	assert(b->size >= dsize2bsize(p, dsize));
-	assert(b->size - dsize < 0x10000);
+	assert(b->Bhdir.size >= dsize2bsize(p, dsize));
+	assert(b->Bhdr.size - dsize < 0x10000);
 
 	t = B2T(b);
-	PSHORT(t->datasize, b->size - dsize);
+	PSHORT(t->datasize, b->Bhdr.size - dsize);
 
 	q=(uint8_t*)_B2D(b)+dsize;
 	eq = (uint8_t*)t;
@@ -537,22 +537,22 @@ trim(Pool *p, Alloc *b, uint32_t dsize)
 	Alloc *frag;
 
 	bsize = dsize2bsize(p, dsize);
-	extra = b->size - bsize;
-	if(b->size - dsize >= 0x10000 ||
+	extra = b->Bhdr.size - bsize;
+	if(b->Bhdr.size - dsize >= 0x10000 ||
 	  (extra >= bsize>>2 && extra >= MINBLOCKSIZE && extra >= p->minblock)) {
-		blocksetsize(b, bsize);
+		blocksetsize(&b->Bhdr, bsize);
 		frag = (Alloc*) B2NB(b);
 
 		antagonism {
 			memmark(frag, 0xF1, extra);
 		}
 
-		frag->magic = UNALLOC_MAGIC;
-		blocksetsize(frag, extra);
+		frag->Bhdr.magic = UNALLOC_MAGIC;
+		blocksetsize(&frag->Bhdr, extra);
 		pooladd(p, frag);
 	}
 
-	b->magic = ALLOC_MAGIC;
+	b->Bhdr.magic = ALLOC_MAGIC;
 	blocksetdsize(p, b, dsize);
 	return b;
 }
@@ -563,12 +563,12 @@ freefromfront(Pool *p, Alloc *b, uint32_t skip)
 	Alloc *bb;
 
 	skip = skip&~(p->quantum-1);
-	if(skip >= 0x1000 || (skip >= b->size>>2 && skip >= MINBLOCKSIZE && skip >= p->minblock)){
+	if(skip >= 0x1000 || (skip >= b->Bhdir.size>>2 && skip >= MINBLOCKSIZE && skip >= p->minblock)){
 		bb = (Alloc*)((uint8_t*)b+skip);
-		blocksetsize(bb, b->size-skip);
-		bb->magic = UNALLOC_MAGIC;
-		blocksetsize(b, skip);
-		b->magic = UNALLOC_MAGIC;
+		blocksetsize(bb, b->Bhdir.size-skip);
+		bb->Bhdr.magic = UNALLOC_MAGIC;
+		blocksetsize(&b->Bhdr, skip);
+		b->Bhdr.magic = UNALLOC_MAGIC;
 		pooladd(p, b);
 		return bb;
 	}
@@ -587,8 +587,8 @@ arenasetsize(Arena *a, uint32_t asize)
 
 	a->asize = asize;
 	atail = A2TB(a);
-	atail->magic = ARENATAIL_MAGIC;
-	atail->size = 0;
+	atail->Bhdir.magic = ARENATAIL_MAGIC;
+	atail->Bhdr.size = 0;
 }
 
 /* poolnewarena: allocate new arena */
@@ -617,18 +617,18 @@ poolnewarena(Pool *p, uint32_t asize)
 	p->cursize += asize;
 
 	/* arena hdr */
-	a->magic = ARENA_MAGIC;
-	blocksetsize(a, sizeof(Arena));
+	a->Bhdr.magic = ARENA_MAGIC;
+	blocksetsize(&a->Bhdr, sizeof(Arena));
 	arenasetsize(a, asize);
-	blockcheck(p, a);
+	blockcheck(p, &a.Bhdr);
 
 	/* create one large block in arena */
 	b = (Alloc*)A2B(a);
-	b->magic = UNALLOC_MAGIC;
-	blocksetsize(b, (uint8_t*)A2TB(a)-(uint8_t*)b);
-	blockcheck(p, b);
+	b->Bhdr.magic = UNALLOC_MAGIC;
+	blocksetsize(&b->Bhdr, (uint8_t*)A2TB(a)-(uint8_t*)b);
+	blockcheck(p, &b->Bhdr);
 	pooladd(p, b);
-	blockcheck(p, b);
+	blockcheck(p, &b->Bhdr);
 
 	/* sort arena into descending sorted arena list */
 	for(lastap=nil, ap=p->arenalist; ap > a; lastap=ap, ap=ap->down)
@@ -655,16 +655,16 @@ poolnewarena(Pool *p, uint32_t asize)
 static void
 blockgrow(Pool *p, Bhdr *b, uint32_t nsize)
 {
-	if(b->magic == FREE_MAGIC) {
+	if(b->Bhdr.magic == FREE_MAGIC) {
 		Alloc *a;
 		Bhdr *bnxt;
 		a = pooldel(p, (Free*)b);
-		blockcheck(p, a);
+		blockcheck(p, &a->Bhdr);
 		blocksetsize(a, nsize);
-		blockcheck(p, a);
+		blockcheck(p, &a->Bhdr);
 		bnxt = B2NB(a);
 		if(bnxt->magic == FREE_MAGIC)
-			a = blockmerge(p, a, bnxt);
+			a = blockmerge(p, &a->Bhdr, bnxt);
 		blockcheck(p, a);
 		pooladd(p, a);
 	} else {
@@ -730,7 +730,7 @@ dumpblock(Pool *p, Bhdr *b)
 	p->print(p, "tail %.8lux %.8lux %.8lux %.8lux %.8lux %.8lux | %.8lux %.8lux\n",
 		dp[-6], dp[-5], dp[-4], dp[-3], dp[-2], dp[-1], dp[0], dp[1]);
 
-	if(b->magic == ALLOC_MAGIC){
+	if(b->Bhdr.magic == ALLOC_MAGIC){
 		dsize = getdsize((Alloc*)b);
 		if(dsize >= b->size)	/* user data size corrupt */
 			return;
@@ -770,13 +770,13 @@ blockcheck(Pool *p, Bhdr *b)
 	uint8_t *q, *bq, *eq;
 	uint32_t dsize;
 
-	switch(b->magic) {
+	switch(b->Bhdr.magic) {
 	default:
 		panicblock(p, b, "bad magic");
 	case FREE_MAGIC:
 	case UNALLOC_MAGIC:
 	 	t = B2T(b);
-		if(t->magic0 != TAIL_MAGIC0 || t->magic1 != TAIL_MAGIC1)
+		if(t->Bhdr.magic0 != TAIL_MAGIC0 || t->magic1 != TAIL_MAGIC1)
 			panicblock(p, b, "corrupt tail magic");
 		if(T2HDR(t) != b)
 			panicblock(p, b, "corrupt tail ptr");
@@ -796,7 +796,7 @@ blockcheck(Pool *p, Bhdr *b)
 		break;
 	case ARENA_MAGIC:
 		b = A2TB((Arena*)b);
-		if(b->magic != ARENATAIL_MAGIC)
+		if(b->Bhdr.magic != ARENATAIL_MAGIC)
 			panicblock(p, b, "bad arena size");
 		/* fall through */
 	case ARENATAIL_MAGIC:
@@ -863,10 +863,10 @@ arenacompact(Pool *p, Arena *a)
 	compacted = 0;
 	for(b=wb=A2B(a); b && b < eb; b=nxt) {
 		nxt = B2NB(b);
-		switch(b->magic) {
+		switch(b->Bhdr.magic) {
 		case FREE_MAGIC:
 			pooldel(p, (Free*)b);
-			b->magic = FLOATING_MAGIC;
+			b->Bhdr.magic = FLOATING_MAGIC;
 			break;
 		case ALLOC_MAGIC:
 			if(wb != b) {
@@ -884,7 +884,7 @@ arenacompact(Pool *p, Arena *a)
 	 * at by wb.  all we need to do is set its size and get out.
 	 */
 	if(wb < eb) {
-		wb->magic = UNALLOC_MAGIC;
+		wb->Bhdr.magic = UNALLOC_MAGIC;
 		blocksetsize(wb, (uint8_t*)eb-(uint8_t*)wb);
 		pooladd(p, (Alloc*)wb);
 	}
@@ -936,7 +936,7 @@ _B2D(void *a)
 static void*
 B2D(Pool *p, Alloc *a)
 {
-	if(a->magic != ALLOC_MAGIC)
+	if(a->Bhdr.magic != ALLOC_MAGIC)
 		p->panic(p, "B2D called on unworthy block");
 	return _B2D(a);
 }
@@ -963,7 +963,7 @@ D2B(Pool *p, void *v)
 	while(u[-1] == ALIGN_MAGIC)
 		u--;
 	a = _D2B(u);
-	if(a->magic != ALLOC_MAGIC)
+	if(a->Bhdr.magic != ALLOC_MAGIC)
 		p->panic(p, "D2B called on non-block %p (double-free?)", v);
 	return a;
 }
@@ -1038,19 +1038,19 @@ poolreallocl(Pool *p, void *v, uint32_t ndsize)
 
 	/* can merge with surrounding blocks? */
 	right = B2NB(a);
-	if(right->magic == FREE_MAGIC && a->size+right->size >= nbsize) {
+	if(right->Bhdr.magic == FREE_MAGIC && a->size+right->size >= nbsize) {
 		a = blockmerge(p, a, right);
 		goto Returnblock;
 	}
 
 	t = B2PT(a);
 	left = T2HDR(t);
-	if(left->magic == FREE_MAGIC && left->size+a->size >= nbsize) {
+	if(left->Bhdr.magic == FREE_MAGIC && left->size+a->size >= nbsize) {
 		a = blockmerge(p, left, a);
 		goto Returnblock;
 	}
 
-	if(left->magic == FREE_MAGIC && right->magic == FREE_MAGIC
+	if(left->Bhdr.magic == FREE_MAGIC && right->Bhdr.magic == FREE_MAGIC
 	&& left->size+a->size+right->size >= nbsize) {
 		a = blockmerge(p, blockmerge(p, left, a), right);
 		goto Returnblock;
@@ -1064,9 +1064,9 @@ poolreallocl(Pool *p, void *v, uint32_t ndsize)
 	right = B2NB(a);
 	newb = D2B(p, nv);
 	if(left == newb || right == newb) {
-		if(left == newb || left->magic == FREE_MAGIC)
+		if(left == newb || left->Bhdr.magic == FREE_MAGIC)
 			a = blockmerge(p, left, a);
-		if(right == newb || right->magic == FREE_MAGIC)
+		if(right == newb || right->Bhdr.magic == FREE_MAGIC)
 			a = blockmerge(p, a, right);
 		assert(a->size >= nbsize);
 		goto Returnblock;
@@ -1195,7 +1195,7 @@ poolfreel(Pool *p, void *v)
 	if(p->flags&POOL_NOREUSE){
 		int n;
 
-		ab->magic = DEAD_MAGIC;
+		ab->Bhdr.magic = DEAD_MAGIC;
 		n = getdsize(ab)-8;
 		if(n > 0)
 			memset((uint8_t*)v+8, 0xDA, n);
@@ -1205,11 +1205,11 @@ poolfreel(Pool *p, void *v)
 	p->nfree++;
 	p->curalloc -= ab->size;
 	back = T2HDR(B2PT(ab));
-	if(back->magic == FREE_MAGIC)
+	if(back->Bhdr.magic == FREE_MAGIC)
 		ab = blockmerge(p, back, ab);
 
 	fwd = B2NB(ab);
-	if(fwd->magic == FREE_MAGIC)
+	if(fwd->Bhdr.magic == FREE_MAGIC)
 		ab = blockmerge(p, ab, fwd);
 
 	pooladd(p, ab);
@@ -1384,7 +1384,7 @@ poolcheckarena(Pool *p, Arena *a)
 	Bhdr *atail;
 
 	atail = A2TB(a);
-	for(b=a; b->magic != ARENATAIL_MAGIC && b<atail; b=B2NB(b))
+	for(b=a; b->Bhdr.magic != ARENATAIL_MAGIC && b<atail; b=B2NB(b))
 		blockcheck(p, b);
 	blockcheck(p, b);
 	if(b != atail)
@@ -1444,8 +1444,8 @@ pooldumparena(Pool *p, Arena *a)
 {
 	Bhdr *b;
 
-	for(b=a; b->magic != ARENATAIL_MAGIC; b=B2NB(b))
-		p->print(p, "(%p %.8lux %lud)", b, b->magic, b->size);
+	for(b=a; b->Bhdr.magic != ARENATAIL_MAGIC; b=B2NB(b))
+		p->print(p, "(%p %.8lux %lud)", b, b->Bhdr.magic, b->size);
 	p->print(p, "\n");
 }
 
