@@ -23,7 +23,7 @@ struct	Mouse
 
 struct Mousectl
 {
-	Mouse;
+	Mouse Mouse;
 	Channel	*c;	/* chan(Mouse) */
 	Channel	*resizec;	/* chan(int)[2] */
 			/* buffered in case client is waiting for a mouse action before handling resize */
