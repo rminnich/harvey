@@ -18,7 +18,7 @@ void
 moveto(Mousectl *m, Point pt)
 {
 	fprint(m->mfd, "m%d %d", pt.x, pt.y);
-	m->xy = pt;
+	m->Mouse.xy = pt;
 }
 
 void

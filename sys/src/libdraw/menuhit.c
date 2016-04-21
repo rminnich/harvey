@@ -120,8 +120,8 @@ menuscan(Image *m, Menu *menu, int but, Mousectl *mc, Rectangle textr, int off, 
 	int i;
 
 	paintitem(m, menu, textr, off, lasti, 1, save, nil);
-	for(readmouse(mc); mc->buttons & (1<<(but-1)); readmouse(mc)){
-		i = menusel(textr, mc->xy);
+	for(readmouse(mc); mc->Mouse.buttons & (1<<(but-1)); readmouse(mc)){
+		i = menusel(textr, mc->Mouse.xy);
 		if(i != -1 && i == lasti)
 			continue;
 		paintitem(m, menu, textr, off, lasti, 0, nil, save);
@@ -208,7 +208,7 @@ menuhit(int but, Mousectl *mc, Menu *menu, Screen *scr)
 	}
 	r = insetrect(Rect(0, 0, wid, nitemdrawn*(font->height+Vspacing)), -Margin);
 	r = rectsubpt(r, Pt(wid/2, lasti*(font->height+Vspacing)+font->height/2));
-	r = rectaddpt(r, mc->xy);
+	r = rectaddpt(r, mc->Mouse.xy);
 	pt = ZP;
 	if(r.max.x>screen->r.max.x)
 		pt.x = screen->r.max.x-r.max.x;
@@ -248,13 +248,13 @@ menuhit(int but, Mousectl *mc, Menu *menu, Screen *scr)
 	menupaint(b, menu, textr, off, nitemdrawn);
 	if(scrolling)
 		menuscrollpaint(b, scrollr, off, nitem, nitemdrawn);
-	while(mc->buttons & (1<<(but-1))){
+	while(mc->Mouse.buttons & (1<<(but-1))){
 		lasti = menuscan(b, menu, but, mc, textr, off, lasti, save);
 		if(lasti >= 0)
 			break;
-		while(!ptinrect(mc->xy, textr) && (mc->buttons & (1<<(but-1)))){
-			if(scrolling && ptinrect(mc->xy, scrollr)){
-				noff = ((mc->xy.y-scrollr.min.y)*nitem)/Dy(scrollr);
+		while(!ptinrect(mc->Mouse.xy, textr) && (mc->Mouse.buttons & (1<<(but-1)))){
+			if(scrolling && ptinrect(mc->Mouse.xy, scrollr)){
+				noff = ((mc->Mouse.xy.y-scrollr.min.y)*nitem)/Dy(scrollr);
 				noff -= nitemdrawn/2;
 				if(noff < 0)
 					noff = 0;
