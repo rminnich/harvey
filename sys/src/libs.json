@@ -18,7 +18,6 @@
 			"/sys/src/libgeometry",
 			"/sys/src/libhttpd",
 			"/sys/src/liblex",
-			"/sys/src/libmach/libmach.json",
 			"/sys/src/libmemdraw",
 			"/sys/src/libmemlayer",
 			"/sys/src/libmp",

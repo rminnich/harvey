@@ -135,9 +135,12 @@
 			"cmd.json"
 		],
 		"Install": "/$ARCH/bin/",
+		"FixProjects": [
+			"acme",
+			"rio/rio.json"
+		],
 		"Projects": [
 			"9660srv/9660srv.json",
-			"acme/build.json",
 			"astro/astro.json",
 			"auth/auth.json",
 			"aux/aux.json",
@@ -159,7 +162,6 @@
 			"grep/grep.json",
 			"ndb/ndb.json",
 			"rc/rc.json",
-			"rio/rio.json",
 			"sam/build.json",
 			"samterm/build.json",
 			"syscall/syscall.json",
