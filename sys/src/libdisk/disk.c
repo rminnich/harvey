@@ -248,8 +248,8 @@ opensd(Disk *disk)
 	int nf;
 
 	Binit(&b, disk->ctlfd, OREAD);
-	while(p = Brdline(&b, '\n')) {
-		p[Blinelen(&b)-1] = '\0';
+	while(p = Brdline(&b.Biobufhdr, '\n')) {
+		p[Blinelen(&b.Biobufhdr)-1] = '\0';
 		nf = tokenize(p, f, nelem(f));
 		if(nf >= 3 && strcmp(f[0], "geometry") == 0) {
 			disk->secsize = strtoll(f[2], 0, 0);

@@ -162,7 +162,7 @@ domkfs(Mkaux *mkaux, File *me, int level)
 	}
 	if(child){
 		freefile(child);
-		Bseek(mkaux->b, -Blinelen(mkaux->b), 1);
+		Bseek(&mkaux->b->Biobufhdr, -Blinelen(&mkaux->b->Biobufhdr), 1);
 		mkaux->lineno--;
 	}
 }
@@ -326,7 +326,7 @@ skipdir(Mkaux *mkaux)
 	level = mkaux->indent;
 	for(;;){
 		mkaux->indent = 0;
-		p = Brdline(mkaux->b, '\n');
+		p = Brdline(&mkaux->b->Biobufhdr, '\n');
 		mkaux->lineno++;
 		if(!p){
 			mkaux->indent = -1;
@@ -340,7 +340,7 @@ skipdir(Mkaux *mkaux)
 			else
 				break;
 		if(mkaux->indent <= level){
-			Bseek(mkaux->b, -Blinelen(mkaux->b), 1);
+			Bseek(&mkaux->b->Biobufhdr, -Blinelen(&mkaux->b->Biobufhdr), 1);
 			mkaux->lineno--;
 			return;
 		}
@@ -359,7 +359,7 @@ getfile(Mkaux *mkaux, File *old)
 		return 0;
 loop:
 	mkaux->indent = 0;
-	p = Brdline(mkaux->b, '\n');
+	p = Brdline(&mkaux->b->Biobufhdr, '\n');
 	mkaux->lineno++;
 	if(!p){
 		mkaux->indent = -1;
