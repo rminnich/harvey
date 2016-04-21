@@ -1,19 +1,21 @@
 {
 	"libs.json": {
-		"Projects": [
-			"/sys/src/libc/libc.json",
-			"/sys/src/libip/libip.json",
-			"/sys/src/libdraw/libdraw.json",
-			"/sys/src/lib9p/lib9p.json",
-			"/sys/src/libauth/libauth.json",
-			"/sys/src/libauthsrv/libauthsrv.json",
-			"/sys/src/libavl/libavl.json",
-			"/sys/src/libbin/libbin.json",
-			"/sys/src/libbio/libbio.json",
-			"/sys/src/libcomplete/libcomplete.json",
+		"Broken": [
 			"/sys/src/libcontrol/libcontrol.json",
+			"/sys/src/lib9p/lib9p.json"
+		],
+		"Projects": [
+			"/sys/src/libc",
+			"/sys/src/libip",
+			"/sys/src/libdraw",
+			"/sys/src/libauth",
+			"/sys/src/libauthsrv",
+			"/sys/src/libavl",
+			"/sys/src/libbin",
+			"/sys/src/libbio",
+			"/sys/src/libcomplete",
 			"/sys/src/libdisk",
-			"/sys/src/libflate/libflate.json",
+			"/sys/src/libflate",
 			"/sys/src/libframe",
 			"/sys/src/libgeometry",
 			"/sys/src/libhttpd",
