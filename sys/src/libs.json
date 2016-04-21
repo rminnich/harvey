@@ -5,7 +5,6 @@
 			"/sys/src/libip/libip.json",
 			"/sys/src/libdraw/libdraw.json",
 			"/sys/src/lib9p/lib9p.json",
-			"/sys/src/libString/libString.json",
 			"/sys/src/libauth/libauth.json",
 			"/sys/src/libauthsrv/libauthsrv.json",
 			"/sys/src/libavl/libavl.json",

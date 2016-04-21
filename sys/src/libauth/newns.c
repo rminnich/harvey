@@ -81,7 +81,7 @@ buildns(int newns, char *user, char *file)
 	}
 
 	cdroot = nsfile(newns ? "newns" : "addns", b, rpc);
-	Bterm(b);
+	Bterm(&b->Biobufhdr);
 	freecloserpc(rpc);
 
 	/* make sure we managed to cd into the new name space */
@@ -105,8 +105,8 @@ nsfile(char *fn, Biobuf *b, AuthRpc *rpc)
 
 	cdroot = 0;
 	atnotify(catch, 1);
-	while(cmd = Brdline(b, '\n')){
-		cmd[Blinelen(b)-1] = '\0';
+	while(cmd = Brdline(&b->Biobufhdr, '\n')){
+		cmd[Blinelen(&b->Biobufhdr)-1] = '\0';
 		while(*cmd==' ' || *cmd=='\t')
 			cmd++;
 		if(*cmd == '#')
@@ -190,7 +190,7 @@ nsop(char *fn, int argc, char *argv[], AuthRpc *rpc)
 		if(b == nil)
 			return 0;
 		cdroot |= nsfile(fn, b, rpc);
-		Bterm(b);
+		Bterm(&b->Biobufhdr);
 	}else if(strcmp(argv0, "clear") == 0 && argc == 0)
 		rfork(RFCNAMEG);
 	else if(strcmp(argv0, "bind") == 0 && argc == 2){

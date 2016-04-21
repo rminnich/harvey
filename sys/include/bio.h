@@ -45,7 +45,24 @@ struct	Biobufhdr
 
 struct	Biobuf
 {
-	Biobufhdr;
+	// This is the same as Biobufhdr, above.
+	// Bio is not all that great, maybe someday we just replace it.
+	// I don't feel like stressing over old bad code.
+#if 0
+	int	icount;		/* neg num of bytes at eob */
+	int	ocount;		/* num of bytes at bob */
+	int	rdline;		/* num of bytes after rdline */
+	int	runesize;	/* num of bytes of last getrune */
+	int	state;		/* r/w/inactive */
+	int	fid;		/* open file */
+	int	flag;		/* magic if malloc'ed */
+	int64_t	offset;		/* offset of buffer in file */
+	int	bsize;		/* size of buffer */
+	uint8_t*	bbuf;		/* pointer to beginning of buffer */
+	uint8_t*	ebuf;		/* pointer to end of buffer */
+	uint8_t*	gbuf;		/* pointer to good data in buf */
+#endif
+	Biobufhdr Biobufhdr;
 	uint8_t	b[Bungetsize+Bsize];
 };
 

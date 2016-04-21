@@ -67,7 +67,7 @@ loadThumbprints(char *file, Thumbprint *table, Thumbprint *crltab)
 	bin = Bopen(file, OREAD);
 	if(bin == nil)
 		return;
-	for(; (line = Brdstr(bin, '\n', 1)) != 0; free(line)){
+	for(; (line = Brdstr(&bin->Biobufhdr, '\n', 1)) != 0; free(line)){
 		if(tokenize(line, field, nelem(field)) < 2)
 			continue;
 		if(strcmp(field[0], "#include") == 0){
@@ -86,7 +86,7 @@ loadThumbprints(char *file, Thumbprint *table, Thumbprint *crltab)
 		entry->next = table[i].next;
 		table[i].next = entry;
 	}
-	Bterm(bin);
+	Bterm(&bin->Biobufhdr);
 }
 
 Thumbprint *

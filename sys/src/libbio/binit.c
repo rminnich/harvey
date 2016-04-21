@@ -99,7 +99,7 @@ Binits(Biobufhdr *bp, int f, int mode, uint8_t *p, int size)
 int
 Binit(Biobuf *bp, int f, int mode)
 {
-	return Binits(bp, f, mode, bp->b, sizeof(bp->b));
+	return Binits(&bp->Biobufhdr, f, mode, bp->b, sizeof(bp->b));
 }
 
 Biobuf*
@@ -122,8 +122,8 @@ Bopen(char *name, int mode)
 	if(f < 0)
 		return 0;
 	bp = malloc(sizeof(Biobuf));
-	Binits(bp, f, mode, bp->b, sizeof(bp->b));
-	bp->flag = Bmagic;			/* mark bp open & malloced */
+	Binits(&bp->Biobufhdr, f, mode, bp->b, sizeof(bp->b));
+	bp->Biobufhdr.flag = Bmagic;			/* mark bp open & malloced */
 	return bp;
 }
 

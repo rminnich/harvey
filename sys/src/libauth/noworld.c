@@ -27,8 +27,8 @@ noworld(char *user)
 	b = Bopen("/adm/users", OREAD);
 	if(b == nil)
 		return 0;
-	while((p = Brdline(b, '\n')) != nil){
-		p[Blinelen(b)-1] = 0;
+	while((p = Brdline(&b->Biobufhdr, '\n')) != nil){
+		p[Blinelen(&b->Biobufhdr)-1] = 0;
 		p = strchr(p, ':');
 		if(p == nil)
 			continue;
@@ -44,11 +44,11 @@ noworld(char *user)
 			break;
 		if(*(p-1) == ':' || *(p-1) == ',')
 		if(*(p+n) == ':' || *(p+n) == ',' || *(p+n) == 0){
-			Bterm(b);
+			Bterm(&b->Biobufhdr);
 			return 1;
 		}
 		p++;
 	}
-	Bterm(b);
+	Bterm(&b->Biobufhdr);
 	return 0;
 }

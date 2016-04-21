@@ -41,7 +41,7 @@ readcolmap(Display *d, RGB *colmap)
 		drawerror(d, "rdcolmap: can't open colormap device");
 
 	for(;;) {
-		p = Brdline(b, '\n');
+		p = Brdline(&b->Biobufhdr, '\n');
 		if(p == 0)
 			break;
 		i = strtoul(p, &q, 0);
@@ -54,5 +54,5 @@ readcolmap(Display *d, RGB *colmap)
 		colmap[255-i].green = getval(&p);
 		colmap[255-i].blue = getval(&p);
 	}
-	Bterm(b);
+	Bterm(&b->Biobufhdr);
 }
