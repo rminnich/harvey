@@ -276,36 +276,6 @@ void pi(int indent)
 		print(" ");
 }
 
-/* walk the whatever. Limited, right now. */
-static void
-objwalk(ACPI_OBJECT *p)
-{
-	static int indent;
-	int cnt;
-	ACPI_OBJECT *e;
-	pi(indent);
-	switch(p->Type) {
-	case 4: // ACPI_DESC_TYPE_STATE_PACKAGE:
-		print("Package:\n");
-		indent += 2;
-		e = p->Package.Elements;
-		for(cnt = 0; cnt < p->Package.Count; cnt++, e++){
-			objwalk(e);
-		}
-
-		indent -= 2;
-		print("\n");
-		break;
-	case 1:
-		print("Integer:0x%llx", p->Integer.Value);
-		break;
-	default:
-		print("Can't handle type %d\n", p->Type);
-		break;
-	}
-
-}
-
 static ACPI_STATUS
 resource(ACPI_RESOURCE *r, void *Context)
 {
@@ -424,11 +394,8 @@ acpiinit(void)
 {
 	ACPI_STATUS as;
 	ACPI_TABLE_HEADER *h;
-	ACPI_BUFFER out;
 	int status;
 	int apiccnt = 1;
-	out.Length = ACPI_ALLOCATE_BUFFER;
-	out.Pointer = nil;
 	status = AcpiInitializeSubsystem();
         if (ACPI_FAILURE(status))
 		panic("can't start acpi");
@@ -519,22 +486,9 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		p += p[1];
 	}
 
-	/* Get the _PRT */
-	int i;
-	for(i = 0; i < 255; i++) {
-		static char path[255];
-		snprint(path, sizeof(path), "\\_SB.PCI%d._PRT", i);
-		as = AcpiEvaluateObject(ACPI_ROOT_OBJECT, path, NULL, &out);
-		if (!ACPI_SUCCESS(as))
-			continue;
-		print("------>GOT the PRT: %d\n", i);
-		print("Length is %u ptr is %p\n", out.Length, out.Pointer);
-		hexdump(out.Pointer, out.Length);
-		objwalk(out.Pointer);
-
-		as = AcpiGetDevices (nil, device, nil, nil);
-		print("acpigetdevices %d\n", as);
-	}
+	/* Get the _PRT's */
+	as = AcpiGetDevices (nil, device, nil, nil);
+	print("acpigetdevices %d\n", as);
 
 /* per device code. Not useful yet.
 
