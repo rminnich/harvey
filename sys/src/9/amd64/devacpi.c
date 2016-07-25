@@ -360,6 +360,7 @@ device(ACPI_HANDLE                     Object,
 {
 	ACPI_STATUS as;
 	ACPI_DEVICE_INFO *info;
+	print("%s: %p %d %p\n", __func__, Object, NestingLevel, Context);
 	as = AcpiGetObjectInfo(Object, &info);
 	print("as is %d\n", as);
 	if (!ACPI_SUCCESS(as))
@@ -370,7 +371,7 @@ device(ACPI_HANDLE                     Object,
 	char n[5];
 	memmove(n, &info->Name, sizeof(info->Name));
 	n[4] = 0;
-	print("%s\n", n);
+	print("\tName: '%s'\n", n);
 	as = AcpiGetIrqRoutingTable(Object, &out);
 	print("get the PRT: %d\n", as);
 	print("Length is %u ptr is %p\n", out.Length, out.Pointer);
