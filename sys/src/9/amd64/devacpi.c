@@ -43,8 +43,11 @@ static Cmdtab ctls[] =
  * what they want to what it needs to be. You are not expected
  * to understand this.
  */
-static ACPI_MADT_INTERRUPT_OVERRIDE *eyesore;
-static int numeyesore;
+struct eyesore {
+	ACPI_MADT_INTERRUPT_OVERRIDE isor;
+	int valid;
+};
+static struct eyesore eyesore[256];
 
 static Dirtab acpidir[]={
 	".",		{Qdir, 0, QTDIR},	0,	DMDIR|0555,
@@ -323,7 +326,21 @@ resource(ACPI_RESOURCE *r, void *Context)
 		print("BOTCH! i->Triggering is 0x%x and I don't do that\n", i->Triggering);
 		break;
 	}
-	print("ACPICODE: ioapicintrinit(0xff, 0x%x, 0x%x, 0x%x, 0x%x\n", 1, i->Interrupts[0], i->Interrupts[0]<<2, low);
+	/* check the eyesores. */
+	int apicno;
+	int irq, devno;
+	apicno = 1;
+	irq = i->Interrupts[0];
+	print("ACPICODE: ");
+	print("irq is %d.", irq);
+
+	if (eyesore[irq].valid){
+		irq = eyesore[irq].isor.SourceIrq;
+		print("but eyesore remaps it to %d.", irq);
+	}
+
+	devno = irq << 2;
+	print("ioapicintrinit(0xff, 0x%x, 0x%x, 0x%x, 0x%x\n", apicno, irq, devno, low);
 	return 0;
 }
 ACPI_STATUS
@@ -470,11 +487,8 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 			ACPI_MADT_INTERRUPT_OVERRIDE *e = (void *)p;
 			print("What an eyesore. Bus %d, SourceIrq %d, GlobalIrq %d, InitFlags 0x%x\n",
 			      e->Bus, e->SourceIrq, e->GlobalIrq, e->IntiFlags);
-			eyesore = realloc(eyesore, numeyesore+1);
-			if (! eyesore)
-				panic("Ran out of eyesores");
-			eyesore[numeyesore] = *e;
-			numeyesore++;
+			eyesore[e->GlobalIrq].isor = *e;
+			eyesore[e->GlobalIrq].valid++;
 		}
 		break;
 		case ACPI_MADT_TYPE_LOCAL_APIC_NMI:
