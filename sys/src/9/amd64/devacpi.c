@@ -357,6 +357,7 @@ device(ACPI_HANDLE                     Object,
 	print("as is %d\n", as);
 	if (!ACPI_SUCCESS(as))
 		return 0;
+	print("ADDRESS is 0x%llx\n", info->Address);
 	ACPI_BUFFER out;
 	out.Length = ACPI_ALLOCATE_BUFFER;
 	out.Pointer = nil;
@@ -367,14 +368,28 @@ device(ACPI_HANDLE                     Object,
 	as = AcpiGetIrqRoutingTable(Object, &out);
 	print("get the PRT: %d\n", as);
 	print("Length is %u ptr is %p\n", out.Length, out.Pointer);
+	/* from what I understand and can see, these only appear on PCI resources. */
 	if (ACPI_SUCCESS(as)) {
 		void *p = (void *)out.Pointer;
+		/* 
+		 * Find the PCI device for this Address.
+		 * Ignore the function (low 16 bits) and the bus
+		 * is 0.
+		 */
 		while(((ACPI_PCI_ROUTING_TABLE*)p)->Length > 0) {
 			ACPI_PCI_ROUTING_TABLE *t = p;
-			print("%s: ", t->Source);
-			print("Pin 0x%x, Address 0x%llx, SourceIndex 0x%x\n",
-			      t->Address, t->SourceIndex);
 			p += t->Length;
+			print("%s: ", t->Source);
+			print("Address 0x%llx, Pin 0x%x, SourceIndex 0x%x\n",
+			      t->Address, t->Pin, t->SourceIndex);
+			uint32_t tbdf = MKBUS(BusPCI, 0, t->Address>>16, 0);
+			Pcidev *pci = pcimatchtbdf(tbdf);
+
+			if (! pci){
+				print("%s: no device matches Address 0x%x\n", __func__, t->Address>>16);
+				continue;
+			}
+			pci->irqroute[t->Pin] = t->SourceIndex;
 		}
 	}
 	as = AcpiWalkResources(Object, "_CRS", resource, nil);
@@ -624,20 +639,48 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 	print("Length is %u ptr is %p\n", out.Length, out.Pointer);
 	hexdump(out.Pointer, out.Length);
 */
-	/* PCI devices: Walk all devices. For those with interrupts, enable them. */
-	/* The root bus has, we assume, but do not know, an identity-mapped set of PCI IRQ
-	 * numbers to APIC numbers. Is this right? Who knows?
-	 */
-	int IrqMap[8] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17};
-	Pcidev*root = nil;
+	/* PCI devices: Walk all devices. For those with interrupts, enable them.
+	 * bus 0 and devices on it are special. They all have _PRT records if they can source
+	 * interrupts. So we walk 0 and, for devices, set up the IRQ; for bridges, we call
+	 * setupPciIrqs with the map taken from the bridge. */
+
+	Pcidev*root = nil, *pci;
 	root = pcimatch(root, 0, 0);
 	/* unlikely. */
 	if (! root) {
 		print("%s: NO ROOT PCI DEVICE?\n", __func__);
 		return 0;
 	}
+	for(pci = root; pci != nil; pci = pci->link){
+		if (!pci->intl || pci->intl == 0xff)
+			continue;
+		print("Interrupt %d: \n", pci->intp);
+		pcishowdev(pci);
+		Pcidev *func0 = pci;
+		int bus = BUSBNO(pci->tbdf);
+		int fun = BUSFNO(pci->tbdf);
+		int apicno = 1; /* for now */
+		int low = 0x1a000; /* is PCI always this? */
+		print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
+		if (fun)
+			func0 = pcimatchtbdf(pci->tbdf & ~0x7ff);
+		print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
+		for(int i = 0; i < 8; i++)
+			print("irqroute 0x%x, ", func0->irqroute[i]);
+		print("\n");
+		/* 
+		 * ah, joy. The routing table is always attached to function 0.
+		 * if this is not function 0 we need to get it.
+		 */
+		int irq = func0->irqroute[pci->intp-1];
+		uint16_t devno = (uint16_t) BUSDNO(pci->tbdf);
+		print("devno is 0x%x, ", devno);
+		devno <<= 2;
+		print("and now 0x%x\n", devno);
+		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
+	}
 
-	setupPciIrqs(0, root, IrqMap);
+//	setupPciIrqs(0, root, IrqMap);
 	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
 	return 0;
 }
