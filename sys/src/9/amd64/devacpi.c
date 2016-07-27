@@ -287,6 +287,11 @@ resource(ACPI_RESOURCE *r, void *Context)
 	      i->Triggering, i->Polarity, i->Sharable, i->InterruptCount);
 	for(int j = 0; j < i->InterruptCount; j++)
 		print("%d,", i->Interrupts[j]);
+	if (i->InterruptCount == 0)
+		return 0;
+	/* we've only seen this case on bogus links. */
+	if ((i->InterruptCount == 1) && (i->Interrupts[0] == 0))
+		return 0;
 	print("\n");
 	/* assumptions: we assume apic 0 for now. This will need to be fixed.
 	 * We also just take the first interrupt. 
