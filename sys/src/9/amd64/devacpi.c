@@ -534,6 +534,41 @@ wrong.
 #endif
 }
 
+void
+doIRQs(int *map, Pcidev*p)
+{
+	Pcidev*pci;
+	for(pci = p; pci != nil; pci = pci->link){
+		if (!pci->intl || pci->intl == 0xff)
+			continue;
+		print("Interrupt %d: \n", pci->intp);
+		pcishowdev(pci);
+		Pcidev *func0 = pci;
+		int bus = BUSBNO(pci->tbdf);
+		int fun = BUSFNO(pci->tbdf);
+		int apicno = 1; /* for now */
+		int low = 0x1a000; /* is PCI always this? */
+		print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
+		if (fun)
+			func0 = pcimatchtbdf(pci->tbdf & ~0x7ff);
+		print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
+		for(int i = 0; i < 8; i++)
+			print("irqroute 0x%x, ", func0->irqroute[i]);
+		print("\n");
+		/* 
+		 * ah, joy. The routing table is always attached to function 0.
+		 * if this is not function 0 we need to get it.
+		 */
+		int irq = func0->irqroute[pci->intp-1];
+		/* TODO: if map is not nil, remap with map. */
+		uint16_t devno = (uint16_t) BUSDNO(pci->tbdf);
+		print("devno is 0x%x, ", devno);
+		devno <<= 2;
+		print("and now 0x%x\n", devno);
+		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
+	}
+
+}
 int
 acpiinit(void)
 {
@@ -644,42 +679,14 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 	 * interrupts. So we walk 0 and, for devices, set up the IRQ; for bridges, we call
 	 * setupPciIrqs with the map taken from the bridge. */
 
-	Pcidev*root = nil, *pci;
+	Pcidev*root = nil;
 	root = pcimatch(root, 0, 0);
 	/* unlikely. */
 	if (! root) {
 		print("%s: NO ROOT PCI DEVICE?\n", __func__);
 		return 0;
 	}
-	for(pci = root; pci != nil; pci = pci->link){
-		if (!pci->intl || pci->intl == 0xff)
-			continue;
-		print("Interrupt %d: \n", pci->intp);
-		pcishowdev(pci);
-		Pcidev *func0 = pci;
-		int bus = BUSBNO(pci->tbdf);
-		int fun = BUSFNO(pci->tbdf);
-		int apicno = 1; /* for now */
-		int low = 0x1a000; /* is PCI always this? */
-		print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
-		if (fun)
-			func0 = pcimatchtbdf(pci->tbdf & ~0x7ff);
-		print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
-		for(int i = 0; i < 8; i++)
-			print("irqroute 0x%x, ", func0->irqroute[i]);
-		print("\n");
-		/* 
-		 * ah, joy. The routing table is always attached to function 0.
-		 * if this is not function 0 we need to get it.
-		 */
-		int irq = func0->irqroute[pci->intp-1];
-		uint16_t devno = (uint16_t) BUSDNO(pci->tbdf);
-		print("devno is 0x%x, ", devno);
-		devno <<= 2;
-		print("and now 0x%x\n", devno);
-		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
-	}
-
+	doIRQs(nil, root);
 //	setupPciIrqs(0, root, IrqMap);
 	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
 	return 0;
