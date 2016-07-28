@@ -371,7 +371,7 @@ device(ACPI_HANDLE                     Object,
 	/* from what I understand and can see, these only appear on PCI resources. */
 	if (ACPI_SUCCESS(as)) {
 		void *p = (void *)out.Pointer;
-		/* 
+		/*
 		 * Find the PCI device for this Address.
 		 * Ignore the function (low 16 bits) and the bus
 		 * is 0.
@@ -390,6 +390,7 @@ device(ACPI_HANDLE                     Object,
 				continue;
 			}
 			pci->irqroute[t->Pin] = t->SourceIndex;
+			pci->nroute++;
 		}
 	}
 	as = AcpiWalkResources(Object, "_CRS", resource, nil);
@@ -535,9 +536,30 @@ wrong.
 }
 
 void
-doIRQs(int *map, Pcidev*p)
+doIRQs(uint8_t*map, Pcidev*p)
 {
 	Pcidev*pci;
+	print("CHECK BRIDGES for");
+	pcishowdev(p);
+	for(pci = p; pci != nil; pci = pci->link){
+		/* process a bridge only if it has routes. There's no use otherwise. */
+		if (pci->bridge && pci->nroute > 0){
+			print("DO A BRIDGE\n");
+			pcishowdev(pci);
+			doIRQs(pci->irqroute, pci->bridge);
+			print("Did that bridge\n");
+		}
+	}
+	print("DONE BRIDGES\n");
+
+	if (! map)
+		print("no map, will be using device routes\n");
+	else {
+		print("map: ");
+		for(int i = 0; i < 8; i++)
+			print("%d: 0x%x, ", i, map[i]);
+		print("\n");
+	}
 	for(pci = p; pci != nil; pci = pci->link){
 		if (!pci->intl || pci->intl == 0xff)
 			continue;
@@ -548,18 +570,25 @@ doIRQs(int *map, Pcidev*p)
 		int fun = BUSFNO(pci->tbdf);
 		int apicno = 1; /* for now */
 		int low = 0x1a000; /* is PCI always this? */
-		print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
-		if (fun)
-			func0 = pcimatchtbdf(pci->tbdf & ~0x7ff);
-		print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
-		for(int i = 0; i < 8; i++)
-			print("irqroute 0x%x, ", func0->irqroute[i]);
-		print("\n");
-		/* 
-		 * ah, joy. The routing table is always attached to function 0.
-		 * if this is not function 0 we need to get it.
-		 */
-		int irq = func0->irqroute[pci->intp-1];
+		int irq = 0;
+		if (map) {
+			irq = map[pci->intp-1];
+			print("irq from map is 0x%x\n", irq);
+		} else {
+			print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
+			if (fun)
+				func0 = pcimatchtbdf(pci->tbdf & ~0x7ff);
+			print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
+			for(int i = 0; i < 8; i++)
+				print("irqroute 0x%x, ", func0->irqroute[i]);
+			print("\n");
+			/*
+			 * ah, joy. The routing table is always attached to function 0.
+			 * if this is not function 0 we need to get it.
+			 */
+			irq = func0->irqroute[pci->intp-1];
+			print("irq from func0 is 0x%x\n", irq);
+		}
 		/* TODO: if map is not nil, remap with map. */
 		uint16_t devno = (uint16_t) BUSDNO(pci->tbdf);
 		print("devno is 0x%x, ", devno);

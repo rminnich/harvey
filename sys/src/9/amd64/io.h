@@ -349,6 +349,7 @@ struct Pcidev
 
 	/* Routing table from _PRT. At the moment, I don't know where else to put this. */
 	uint8_t irqroute[8];
+	int nroute;
 
 	struct {
 		uint32_t	bar;

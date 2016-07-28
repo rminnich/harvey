@@ -145,7 +145,7 @@ pcilscan(int bno, Pcidev** list)
 			l = pcicfgrw(tbdf, PciVID, 0, Read, 4);
 			if(l == 0xFFFFFFFF || l == 0)
 				continue;
-			p = malloc(sizeof(*p));
+			p = mallocz(sizeof(*p), 1);
 			p->caplist = nil;
 			p->capidx = nil;
 			p->capcnt = 0;
