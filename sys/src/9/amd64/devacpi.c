@@ -724,7 +724,7 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 	doIRQs(nil, root);
 //	setupPciIrqs(0, root, IrqMap);
 	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
-	return 0;
+	return useacpi;
 }
 
 static Chan*
