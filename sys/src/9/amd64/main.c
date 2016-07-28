@@ -56,6 +56,7 @@ static int vflag = 1;
 
 int nosmp = 1;
 int enableacpi = 0;
+int useacpi = 0;
 
 /*
  *	this may need improvement, but right now it's just for
@@ -150,6 +151,7 @@ options(int argc, char* argv[])
 	// hack.
 	nosmp = dbgflg['n'];
 	enableacpi = dbgflg['a'];
+	useacpi = dbgflg['A'];
 }
 
 void

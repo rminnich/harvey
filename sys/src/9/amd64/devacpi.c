@@ -36,7 +36,7 @@ static Cmdtab ctls[] =
 };
 #endif
 
-
+extern int useacpi;
 /*
  * This is the array of eyesores.
  * An Eyesore is an Interrupt Source Over Ride, which maps from
@@ -341,6 +341,8 @@ resource(ACPI_RESOURCE *r, void *Context)
 
 	devno = irq << 2;
 	print("ioapicintrinit(0xff, 0x%x, 0x%x, 0x%x, 0x%x\n", apicno, irq, devno, low);
+	if (useacpi)
+		ioapicintrinit(0xff,  apicno, irq, devno, low);
 	return 0;
 }
 ACPI_STATUS
@@ -453,6 +455,8 @@ setupPciIrqs(int bno, Pcidev* p, int *IrqMap)
 		devno <<= 2;
 		print("and now 0x%x\n", devno);
 		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
+		if (useacpi)
+			ioapicintrinit(bus, apicno, irq, devno, low);
 	}
 	return 0;
 #if 0
@@ -595,6 +599,8 @@ doIRQs(uint8_t*map, Pcidev*p)
 		devno <<= 2;
 		print("and now 0x%x\n", devno);
 		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
+		if (useacpi)
+			ioapicintrinit(bus, apicno, irq, devno, low);
 	}
 
 }
