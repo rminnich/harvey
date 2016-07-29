@@ -112,11 +112,15 @@ ioapicintrinit(int busno, int apicno, int intin, int devno, uint32_t lo)
 	Rdt *rdt;
 	Apic *apic;
 	print("ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%d\n", busno, apicno, intin, devno, lo);
-	if(busno >= Nbus || apicno >= Napic || nrdtarray >= Nrdt)
+	if(busno >= Nbus || apicno >= Napic || nrdtarray >= Nrdt) {
+		print("=============> bail ioapicintrinit bails out early\n");
 		return;
+	}
 	apic = &xioapic[apicno];
-	if(!apic->useable || intin >= apic->Ioapic.nrdt)
+	if(!apic->useable || intin >= apic->Ioapic.nrdt) {
+		print("=============> bail apic %d %s intin %d apic->Ioapic.nrdt %d\n", apicno, intin, apic->Ioapic.nrdt);
 		return;
+	}
 
 	rdt = rdtlookup(apic, intin);
 	if(rdt == nil){

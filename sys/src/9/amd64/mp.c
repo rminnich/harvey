@@ -58,6 +58,7 @@ static Mpbus mpbusdef[] = {
 static Mpbus* mpbus[Nbus];
 static int hackisabusno = -1;
 int mpisabusno = -1;
+extern int useacpi;
 
 static void
 mpintrprint(char* s, uint8_t* p)
@@ -303,9 +304,14 @@ print("CODE: ioapicinit(%d, %p);\n", p[i], l32get(p+4));
 		devno = p[5];
 		if(memcmp(mpbus[p[4]]->type, "PCI   ", 6) != 0)
 			devno <<= 2;
-print("CODE: ioapicintrinit(0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", p[4], p[6], p[7], devno, lo);
 		if (p[4] == hackisabusno) p[4] = mpisabusno;
-		ioapicintrinit(p[4], p[6], p[7], devno, lo);
+		if (! useacpi) {
+print("CODE: ioapicintrinit(0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", p[4], p[6], p[7], devno, lo);
+			ioapicintrinit(p[4], p[6], p[7], devno, lo);
+		} else if (p[4] == mpisabusno) {
+print("CODE: ioapicintrinit(0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", p[4], p[6], p[7], devno, lo);
+			ioapicintrinit(p[4], p[6], p[7], devno, lo);
+		}
 
 		p += 8;
 		break;

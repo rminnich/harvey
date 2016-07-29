@@ -577,6 +577,22 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 	hi("free ok\n");
 	 */
 
+	umeminit();
+	trapinit();
+
+	/*
+	 * This is necessary with GRUB and QEMU.
+	 * Without it an interrupt can occur at a weird vector,
+	 * because the vector base is likely different, causing
+	 * havoc. Do it before any APIC initialisation.
+	 */
+	i8259init(32);
+
+	procinit0();
+
+//	if (! enableacpi)
+		mpsinit(maxcores);
+
 	/*
 	 * Acpiinit will cause the first malloc
 	 * call to happen.
@@ -592,21 +608,6 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 		enableacpi = acpiinit();
 	}
 
-	umeminit();
-	trapinit();
-
-	/*
-	 * This is necessary with GRUB and QEMU.
-	 * Without it an interrupt can occur at a weird vector,
-	 * because the vector base is likely different, causing
-	 * havoc. Do it before any APIC initialisation.
-	 */
-	i8259init(32);
-
-
-	procinit0();
-	if (! enableacpi)
-		mpsinit(maxcores);
 	print("CODE: apiconline();\n");
 	apiconline();
 	print("CODE: if(! nosmp) sipi();\n");

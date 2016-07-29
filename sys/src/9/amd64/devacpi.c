@@ -429,116 +429,6 @@ device(ACPI_HANDLE                     Object,
 	return 0;
 }
 
-static int
-setupPciIrqs(int bno, Pcidev* p, int *IrqMap)
-{
-	Pcidev *pci;
-
-	/* do everything at this level. */
-	for(pci = p; pci != nil; pci = pci->link){
-		if (!pci->intl || pci->intl == 0xff)
-			continue;
-		print("Interrupt %d: \n", pci->intp);
-		pcishowdev(pci);
-		int bus = BUSBNO(pci->tbdf);
-		int apicno = 1; /* for now */
-		int low = 0x1a000; /* is PCI always this? */
-		int irq = IrqMap[pci->intp-1];
-		uint16_t devno = (uint16_t) pci->tbdf;
-		print("devno is 0x%x, ", devno);
-		/*
-		 * need to extract the devno. This means >> 11 bits, << 2.
-		 * That's not the same as >> 9. You need to blow away the
-		 * function bits.
-		 */
-		devno >>= 11;
-		devno <<= 2;
-		print("and now 0x%x\n", devno);
-		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
-		if (useacpi)
-			ioapicintrinit(bus, apicno, irq, devno, low);
-	}
-	return 0;
-#if 0
-
-	maxubn = bno;
-	head = nil;
-	tail = nil;
-	for(dno = 0; dno <= Maxdev; dno++){
-		/*
-		 * one interrupt for all functions.
-		 * For this possible device, form the
-		 * bus+device+function triplet needed to address it
-		 * and try to read the vendor and device ID.
-		 * If successful, see if the interrupt pin is non-zero and,
-		 * if so, use it as an index into IrqMap and set up the IRQ.
-		 */
-wrong.
-		tbdf = MKBUS(BusPCI, bno, dno, fno);
-		l = pcicfgrw(tbdf, PciVID, 0, Read, 4);
-		if(l == 0xFFFFFFFF || l == 0)
-			continue;
-		int apicno = 1; /* for now */
-		int low = 0x1a000; /* is PCI always this? */
-		print("ACPICODE: ioapicintrinit(%d, %d, %d, 0x%x, 0x%x);\n", bus, apicno, pci->intl, pci->tbdf, low);
-	}
-
-	*list = head;
-	for(p = head; p != nil; p = p->link) {
-		/*
-		 * Find PCI-PCI bridges and recursively descend the tree.
-		 */
-		if(p->ccrb != 0x06 || p->ccru != 0x04)
-			continue;
-
-		/*
-		 * If the secondary or subordinate bus number is not
-		 * initialised try to do what the PCI BIOS should have
-		 * done and fill in the numbers as the tree is descended.
-		 * On the way down the subordinate bus number is set to
-		 * the maximum as it's not known how many buses are behind
-		 * this one; the final value is set on the way back up.
-		 */
-		sbn = pcicfgr8(p, PciSBN);
-		ubn = pcicfgr8(p, PciUBN);
-
-		if(sbn == 0 || ubn == 0) {
-			print("%T: unconfigured bridge\n", p->tbdf);
-
-			sbn = maxubn+1;
-			/*
-			 * Make sure memory, I/O and master enables are
-			 * off, set the primary, secondary and subordinate
-			 * bus numbers and clear the secondary status before
-			 * attempting to scan the secondary bus.
-			 *
-			 * Initialisation of the bridge should be done here.
-			 */
-			pcicfgw32(p, PciPCR, 0xFFFF0000);
-			pcicfgw32(p, PciPBN, Maxbus<<16 | sbn<<8 | bno);
-			pcicfgw16(p, PciSPSR, 0xFFFF);
-			maxubn = pcilscan(sbn, &p->bridge);
-			pcicfgw32(p, PciPBN, maxubn<<16 | sbn<<8 | bno);
-		}
-		else {
-			/*
-			 * You can't go back.
-			 * This shouldn't be possible, but the
-			 * Iwill DK8-HTX seems to have subordinate
-			 * bus numbers which get smaller on the
-			 * way down. Need to look more closely at
-			 * this.
-			 */
-			if(ubn > maxubn)
-				maxubn = ubn;
-			pcilscan(sbn, &p->bridge);
-		}
-	}
-
-	return maxubn;
-#endif
-}
-
 void
 doIRQs(uint8_t*map, Pcidev*p)
 {
@@ -722,7 +612,6 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		return 0;
 	}
 	doIRQs(nil, root);
-//	setupPciIrqs(0, root, IrqMap);
 	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
 	return useacpi;
 }
