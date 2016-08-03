@@ -36,7 +36,7 @@ static Cmdtab ctls[] =
 };
 #endif
 
-extern int useacpi;
+extern int enableacpi;
 /*
  * This is the array of eyesores.
  * An Eyesore is an Interrupt Source Over Ride, which maps from
@@ -341,7 +341,7 @@ resource(ACPI_RESOURCE *r, void *Context)
 
 	devno = irq << 2;
 	print("ioapicintrinit(0xff, 0x%x, 0x%x, 0x%x, 0x%x\n", apicno, irq, devno, low);
-	if (useacpi)
+	if (0 && enableacpi)
 		ioapicintrinit(0xff,  apicno, irq, devno, low);
 	return 0;
 }
@@ -489,7 +489,7 @@ doIRQs(uint8_t*map, Pcidev*p)
 		devno <<= 2;
 		print("and now 0x%x\n", devno);
 		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
-		if (useacpi)
+		if (0 && enableacpi)
 			ioapicintrinit(bus, apicno, irq, devno, low);
 	}
 
@@ -501,6 +501,7 @@ acpiinit(void)
 	ACPI_TABLE_HEADER *h;
 	int status;
 	int apiccnt = 1;
+	enableacpi = 0;
 	status = AcpiInitializeSubsystem();
         if (ACPI_FAILURE(status))
 		panic("can't start acpi");
@@ -552,7 +553,7 @@ acpiinit(void)
 			ACPI_MADT_LOCAL_APIC *l = (void *)p;
 			if (!l->LapicFlags)
 				break;
-			apicinit(l->Id, m->Address, apiccnt == 1);
+			if (0) apicinit(l->Id, m->Address, apiccnt == 1);
 print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
 			apiccnt++;
 		}
@@ -561,7 +562,7 @@ print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
 		{
 			ACPI_MADT_IO_APIC *io = (void *)p;
 			print("IOapic %d @ %p\n", io->Id, io->Address);
-			ioapicinit(io->Id, io->Address);
+			if (0) ioapicinit(io->Id, io->Address);
 print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		}
 			break;
@@ -577,7 +578,7 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		case ACPI_MADT_TYPE_LOCAL_APIC_NMI:
 		{
 			ACPI_MADT_LOCAL_APIC_NMI *nmi = (void *)p;
-			apicnmi(nmi->ProcessorId, nmi->Lint, nmi->IntiFlags);
+		if (0) apicnmi(nmi->ProcessorId, nmi->Lint, nmi->IntiFlags);
 		}
 			break;
 		default:
@@ -611,9 +612,10 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		print("%s: NO ROOT PCI DEVICE?\n", __func__);
 		return 0;
 	}
-	doIRQs(nil, root);
+	if (0) doIRQs(nil, root);
 	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
-	return useacpi;
+	print("enableacpi: %d\n", enableacpi);
+	return enableacpi;
 }
 
 static Chan*

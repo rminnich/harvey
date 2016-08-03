@@ -58,7 +58,7 @@ static Mpbus mpbusdef[] = {
 static Mpbus* mpbus[Nbus];
 static int hackisabusno = -1;
 int mpisabusno = -1;
-extern int useacpi;
+extern int enableacpi;
 
 static void
 mpintrprint(char* s, uint8_t* p)
@@ -217,7 +217,7 @@ mpparse(PCMP* pcmp, int maxcores)
 		 */
 		DBG("mpparse: cpu %d pa %#x bp %d\n",
 			p[1], l32get(pcmp->apicpa), p[3] & 0x02);
-		if((p[3] & 0x01) != 0 && maxcores-- > 0) {
+		if((p[3] & 0x01) != 0 && maxcores-- > 0 && ! enableacpi) {
 			print("CODE: apicinit(%d, %p, %d); \n", p[1], (void *)(uint64_t)l32get(pcmp->apicpa), p[3]&2);
 			apicinit(p[1], l32get(pcmp->apicpa), p[3] & 0x02);
 		}
@@ -265,7 +265,7 @@ print("CODE: mpisabusno = %d\n", p[1]);
 		 * p[1] is the APIC ID, p[4-7] is the memory mapped address.
 		 */
 print("MP: add an IOAPIC %d\n", p[1]);
-		if(p[3] & 0x01) {
+		if(p[3] & 0x01 && enableacpi < 2) {
 print("CODE: ioapicinit(%d, %p);\n", p[i], l32get(p+4));
 			ioapicinit(p[1], l32get(p+4));
 		}
@@ -305,13 +305,10 @@ print("CODE: ioapicinit(%d, %p);\n", p[i], l32get(p+4));
 		if(memcmp(mpbus[p[4]]->type, "PCI   ", 6) != 0)
 			devno <<= 2;
 		if (p[4] == hackisabusno) p[4] = mpisabusno;
-		if (! useacpi) {
+		if (enableacpi < 3) {
 print("CODE: ioapicintrinit(0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", p[4], p[6], p[7], devno, lo);
 			ioapicintrinit(p[4], p[6], p[7], devno, lo);
-		} else if (p[4] == mpisabusno) {
-print("CODE: ioapicintrinit(0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", p[4], p[6], p[7], devno, lo);
-			ioapicintrinit(p[4], p[6], p[7], devno, lo);
-		}
+		} 
 
 		p += 8;
 		break;
