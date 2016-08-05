@@ -57,6 +57,9 @@ static Lock idtnolock;
 static int idtno = IdtIOAPIC;
 
 Apic	xioapic[Napic];
+static int numirq;
+/* This is a map from irq numbers to ioapic numbers. */
+static int irqmap[255];
 
 static uint32_t ioapicread(Apic*apic, int reg)
 {
@@ -111,14 +114,16 @@ ioapicintrinit(int busno, int apicno, int intin, int devno, uint32_t lo)
 	Rbus *rbus;
 	Rdt *rdt;
 	Apic *apic;
-	print("ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", busno, apicno, intin, devno, lo);
+	print("ioapicintrinit(0x%x, %d, 0x%x, 0x%x, 0x%x);\n", busno, apicno, intin, devno, lo);
 	if(busno >= Nbus || apicno >= Napic || nrdtarray >= Nrdt) {
 		print("=============> bail ioapicintrinit bails out early\n");
+		delay(40000);
 		return;
 	}
 	apic = &xioapic[apicno];
 	if(!apic->useable || intin >= apic->Ioapic.nrdt) {
 		print("=============> bail apic %d %s intin %d apic->Ioapic.nrdt %d\n", apicno, intin, apic->Ioapic.nrdt);
+		delay(40000);
 		return;
 	}
 
@@ -145,6 +150,16 @@ ioapicintrinit(int busno, int apicno, int intin, int devno, uint32_t lo)
 }
 
 void
+ioapicintrsetup(int busno, int intin, int devno, uint32_t lo)
+{
+	if (intin > numirq - 1){
+		print("%s(%d, %d, 0x%x, 0x%x) -> numirq is %d\n", busno,
+		      intin, devno, lo, numirq);
+		return;
+	}
+	ioapicintrinit(busno, irqmap[intin], intin, devno, lo);
+}
+void
 ioapicinit(int id, uintptr_t pa)
 {
 	Apic *apic;
@@ -156,6 +171,7 @@ ioapicinit(int id, uintptr_t pa)
 	if(id >= Napic)
 		return;
 
+	print("ioapicinit(%d, %p);\n", id, (void *)pa);
 	apic = &xioapic[id];
 	if(apic->useable || (apic->Ioapic.addr = vmap(pa, 1024)) == nil)
 		return;
@@ -173,6 +189,9 @@ ioapicinit(int id, uintptr_t pa)
 
 	ioapicwrite(apic, Ioapicid, id<<24);
 	unlock(&apic->Ioapic.l);
+	/* Set up the map from irq to apic. */
+	for(int i = 0; i < apic->Ioapic.nrdt; i++, numirq++)
+		irqmap[numirq] = id;
 }
 
 void
@@ -408,7 +427,7 @@ ioapicintrenable(Vctl* v)
 
 	rdt = nil;
 	for(rbus = rdtbus[busno]; rbus != nil; rbus = rbus->next) {
-print("IOAPIC: find it, rbus->devno %d devno %d\n", rbus->devno, devno);
+if (0) print("IOAPIC: find it, rbus->devno %d devno %d\n", rbus->devno, devno);
 		if(rbus->devno == devno){
 			rdt = rbus->rdt;
 			break;

@@ -241,6 +241,7 @@ extern void apicnmi(int, int, int);
 
 extern void ioapicinit(int, uintmem);
 extern void ioapicintrinit(int, int, int, int, uint32_t);
+extern void ioapicintrsetup(int, int, int, uint32_t);
 extern void ioapiconline(void);
 
 /*
