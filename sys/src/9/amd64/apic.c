@@ -128,7 +128,7 @@ apicinit(int apicno, uintmem pa, int isbp)
 	 * are used for the APIC ID. There is also xAPIC and x2APIC
 	 * to be dealt with sometime.
 	 */
-	DBG("apicinit: apicno %d pa %#p isbp %d\n", apicno, pa, isbp);
+	print("apicinit: apicno %d pa %#p isbp %d\n", apicno, pa, isbp);
 	if(apicno >= Napic){
 		print("apicinit%d: out of range\n", apicno);
 		return;

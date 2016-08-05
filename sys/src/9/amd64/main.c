@@ -55,7 +55,7 @@ char dbgflg[256];
 static int vflag = 1;
 
 int nosmp = 1;
-int enableacpi = 1;
+int enableacpi = 0;
 
 /*
  *	this may need improvement, but right now it's just for
@@ -96,8 +96,8 @@ machp_bad(void)
 		return;
 	}
 	trace[i] = badpc;
-	print("machp access spllo,");
-	stacksnippet();
+	//print("machp access spllo,");
+	//stacksnippet();
 }
 
 void
@@ -602,6 +602,7 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 		 * This means we can always boot. */
 		enableacpi = acpiinit();
 	}
+	delay(60000);
 	//apicinit(0, 0xfee00000, 2); 
 	//enableacpi = 1;
 	if (! enableacpi)

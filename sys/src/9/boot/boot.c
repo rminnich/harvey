@@ -246,6 +246,7 @@ rootserver(char *arg)
 	}
 
 	/* make list of methods */
+	{ static char i[8192]; int amt, fd = open("#P/irqalloc", 0); amt = read(fd, i, 8192); write(1, i, amt); close(fd);}
 	mp = method;
 	n = sprint(prompt, "root is from (%s", mp->name);
 	for(mp++; mp->name; mp++)

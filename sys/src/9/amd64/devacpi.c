@@ -55,7 +55,8 @@ static Dirtab acpidir[]={
 	"acpitbl",	{Qtbl},			0,	0444,
 	"acpiregio",	{Qio},			0,	0666,
 };
-
+#define D 0
+#define P 0
 #if 0
 static char* regnames[] = {
 	"mem", "io", "pcicfg", "embed",
@@ -141,7 +142,7 @@ acpirsdptr(void)
 		print("NO RSD PTR found\n");
 		return;
 	}
-	print("Found RST PTR ta %p\n", rsd);
+	if (D) print("Found RST PTR ta %p\n", rsd);
 
 #if 0
 	assert(sizeof(Sdthdr) == 36);
@@ -220,7 +221,7 @@ acpigen(Chan *c, char* d, Dirtab *tab, int ntab, int i, Dir *dp)
 ACPI_STATUS
 AcpiOsInitialize(void)
 {
-	print("%s\n", __func__);
+	if (D) print("%s\n", __func__);
 	acpirsdptr();
 	return AE_OK;
 }
@@ -229,7 +230,7 @@ ACPI_STATUS
 AcpiOsTerminate (
 	void)
 {
-	print("%s\n", __func__);
+	if (D) print("%s\n", __func__);
 	return AE_OK;
 }
 
@@ -261,7 +262,7 @@ run_aml_arg(char *name, int val)
 	};
     */
 	as = AcpiEvaluateObject(ACPI_ROOT_OBJECT, name, &args, NULL);
-	print("run_aml_arg(%s, %d) returns %d\n", name, val, as);
+	if (D) print("run_aml_arg(%s, %d) returns %d\n", name, val, as);
 	return ACPI_SUCCESS(as);
 }
 
@@ -283,19 +284,19 @@ static ACPI_STATUS
 resource(ACPI_RESOURCE *r, void *Context)
 {
 	ACPI_RESOURCE_IRQ *i = &r->Data.Irq;
-	print("\tACPI_RESOURCE_TYPE_%d: Length %d\n", r->Type, r->Length);
+	if (D) print("\tACPI_RESOURCE_TYPE_%d: Length %d\n", r->Type, r->Length);
 	if (r->Type != ACPI_RESOURCE_TYPE_IRQ)
 		return 0;
-	print("\t\tIRQ Triggering %d Polarity %d Sharable %d InterruptCount %d: ",
+	if (D) print("\t\tIRQ Triggering %d Polarity %d Sharable %d InterruptCount %d: ",
 	      i->Triggering, i->Polarity, i->Sharable, i->InterruptCount);
-	for(int j = 0; j < i->InterruptCount; j++)
+	if (D) for(int j = 0; j < i->InterruptCount; j++)
 		print("%d,", i->Interrupts[j]);
 	if (i->InterruptCount == 0)
 		return 0;
 	/* we've only seen this case on bogus links. */
 	if ((i->InterruptCount == 1) && (i->Interrupts[0] == 0))
 		return 0;
-	print("\n");
+	if (D) print("\n");
 	/* assumptions: we assume apic 0 for now. This will need to be fixed.
 	 * We also just take the first interrupt.
 	 */
@@ -327,22 +328,20 @@ resource(ACPI_RESOURCE *r, void *Context)
 		break;
 	}
 	/* check the eyesores. */
-	int apicno;
 	int irq, devno;
-	apicno = 1;
 	irq = i->Interrupts[0];
-	print("ACPICODE: ");
-	print("irq is %d.", irq);
+	if (D) print("ACPICODE: ");
+	if (D) print("irq is %d.", irq);
 
 	if (eyesore[irq].valid){
 		irq = eyesore[irq].isor.SourceIrq;
-		print("but eyesore remaps it to %d.", irq);
+		if (D) print("but eyesore remaps it to %d.", irq);
 	}
 
 	devno = irq << 2;
-	print("ioapicintrinit(0xff, 0x%x, 0x%x, 0x%x, 0x%x\n", apicno, irq, devno, low);
+	if (D) print("ioapicintrsetup(0xff, 0x%x, 0x%x, 0x%x\n", irq, devno, low);
 	if (enableacpi) {
-		ioapicintrinit(0xff,  apicno, irq, devno, low);
+		ioapicintrsetup(0xff,  irq, devno, low);
 		enableacpi++;
 	}
 	return 0;
@@ -356,22 +355,22 @@ device(ACPI_HANDLE                     Object,
 {
 	ACPI_STATUS as;
 	ACPI_DEVICE_INFO *info;
-	print("%s: %p %d %p\n", __func__, Object, NestingLevel, Context);
+	if (D) print("%s: %p %d %p\n", __func__, Object, NestingLevel, Context);
 	as = AcpiGetObjectInfo(Object, &info);
-	print("as is %d\n", as);
+	if (D) print("as is %d\n", as);
 	if (!ACPI_SUCCESS(as))
 		return 0;
-	print("ADDRESS is 0x%llx\n", info->Address);
+	if (D) print("ADDRESS is 0x%llx\n", info->Address);
 	ACPI_BUFFER out;
 	out.Length = ACPI_ALLOCATE_BUFFER;
 	out.Pointer = nil;
 	char n[5];
 	memmove(n, &info->Name, sizeof(info->Name));
 	n[4] = 0;
-	print("\tName: '%s'\n", n);
+	if (D) print("\tName: '%s'\n", n);
 	as = AcpiGetIrqRoutingTable(Object, &out);
-	print("get the PRT: %d\n", as);
-	print("Length is %u ptr is %p\n", out.Length, out.Pointer);
+	if (D) print("get the PRT: %d\n", as);
+	if (D) print("Length is %u ptr is %p\n", out.Length, out.Pointer);
 	/* from what I understand and can see, these only appear on PCI resources. */
 	if (ACPI_SUCCESS(as)) {
 		void *p = (void *)out.Pointer;
@@ -383,14 +382,14 @@ device(ACPI_HANDLE                     Object,
 		while(((ACPI_PCI_ROUTING_TABLE*)p)->Length > 0) {
 			ACPI_PCI_ROUTING_TABLE *t = p;
 			p += t->Length;
-			print("%s: ", t->Source);
-			print("Address 0x%llx, Pin 0x%x, SourceIndex 0x%x\n",
+			if (D) print("%s: ", t->Source);
+			if (D) print("Address 0x%llx, Pin 0x%x, SourceIndex 0x%x\n",
 			      t->Address, t->Pin, t->SourceIndex);
 			uint32_t tbdf = MKBUS(BusPCI, 0, t->Address>>16, 0);
 			Pcidev *pci = pcimatchtbdf(tbdf);
 
 			if (! pci){
-				print("%s: no device matches Address 0x%x\n", __func__, t->Address>>16);
+				if (D) print("%s: no device matches Address 0x%x\n", __func__, t->Address>>16);
 				continue;
 			}
 			pci->irqroute[t->Pin] = t->SourceIndex;
@@ -398,7 +397,7 @@ device(ACPI_HANDLE                     Object,
 		}
 	}
 	as = AcpiWalkResources(Object, "_CRS", resource, nil);
-	print("Walk resources: as is %d\n", as);
+	if (D) print("Walk resources: as is %d\n", as);
 #if 0
 	out.Length = ACPI_ALLOCATE_BUFFER;
 	out.Pointer = nil;
@@ -426,7 +425,6 @@ device(ACPI_HANDLE                     Object,
 
 	}
 #endif
-	print("hi\n");
 
 	return 0;
 }
@@ -435,22 +433,22 @@ void
 doIRQs(uint8_t*map, Pcidev*p)
 {
 	Pcidev*pci;
-	print("CHECK BRIDGES for");
+	if (D) print("CHECK BRIDGES for");
 	pcishowdev(p);
 	for(pci = p; pci != nil; pci = pci->link){
 		/* process a bridge only if it has routes. There's no use otherwise. */
 		if (pci->bridge && pci->nroute > 0){
-			print("DO A BRIDGE\n");
+			if (D) print("DO A BRIDGE\n");
 			pcishowdev(pci);
 			doIRQs(pci->irqroute, pci->bridge);
-			print("Did that bridge\n");
+			if (D) print("Did that bridge\n");
 		}
 	}
-	print("DONE BRIDGES\n");
+	if (D) print("DONE BRIDGES\n");
 
-	if (! map)
-		print("no map, will be using device routes\n");
-	else {
+	if (! map){
+		if (D) print("no map, will be using device routes\n");
+	} else if (D) {
 		print("map: ");
 		for(int i = 0; i < 8; i++)
 			print("%d: 0x%x, ", i, map[i]);
@@ -459,40 +457,39 @@ doIRQs(uint8_t*map, Pcidev*p)
 	for(pci = p; pci != nil; pci = pci->link){
 		if (!pci->intl || pci->intl == 0xff)
 			continue;
-		print("Interrupt %d: \n", pci->intp);
-		pcishowdev(pci);
+		if (D) print("Interrupt %d: \n", pci->intp);
+		if (D) pcishowdev(pci);
 		Pcidev *func0 = pci;
 		int bus = BUSBNO(pci->tbdf);
 		int fun = BUSFNO(pci->tbdf);
-		int apicno = 1; /* for now */
 		int low = 0x1a000; /* is PCI always this? */
 		int irq = 0;
 		if (map) {
 			irq = map[pci->intp-1];
-			print("irq from map is 0x%x\n", irq);
+			if (D) print("irq from map is 0x%x\n", irq);
 		} else {
-			print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
+			if (D) print("Find func0 at 0x%x\n", pci->tbdf & ~0x7ff);
 			if (fun)
 				func0 = pcimatchtbdf(pci->tbdf & ~0x7ff);
-			print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
-			for(int i = 0; i < 8; i++)
+			if (D) print("func0 tbdf is 0x%p", (void *)(uint64_t)func0->tbdf);
+			if (D) for(int i = 0; i < 8; i++)
 				print("irqroute 0x%x, ", func0->irqroute[i]);
-			print("\n");
+			if (D) print("\n");
 			/*
 			 * ah, joy. The routing table is always attached to function 0.
 			 * if this is not function 0 we need to get it.
 			 */
 			irq = func0->irqroute[pci->intp-1];
-			print("irq from func0 is 0x%x\n", irq);
+			if (D) print("irq from func0 is 0x%x\n", irq);
 		}
 		/* TODO: if map is not nil, remap with map. */
 		uint16_t devno = (uint16_t) BUSDNO(pci->tbdf);
-		print("devno is 0x%x, ", devno);
+		if (D) print("devno is 0x%x, ", devno);
 		devno <<= 2;
-		print("and now 0x%x\n", devno);
-		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
+		if (D) print("and now 0x%x\n", devno);
+		if (D) print("ACPICODE: ioapicintrsetup(%d, 0x%x, 0x%x, 0x%x);\n", bus, irq, devno, low);
 		if (enableacpi){
-			ioapicintrinit(bus, apicno, irq, devno, low);
+			ioapicintrsetup(bus, irq, devno, low);
 			enableacpi++;
 		}
 	}
@@ -563,7 +560,7 @@ acpiinit(void)
 			apicinit(l->Id, m->Address, apiccnt == 1);
 			if (! enableacpi)
 				enableacpi = 1;
-print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
+if (D) print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
 			}
 			apiccnt++;
 		}
@@ -571,16 +568,16 @@ print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
 		case ACPI_MADT_TYPE_IO_APIC:
 		{
 			ACPI_MADT_IO_APIC *io = (void *)p;
-			print("IOapic %d @ %p\n", io->Id, io->Address);
+			if (D) print("IOapic %d @ %p\n", io->Id, io->Address);
 			if (1) ioapicinit(io->Id, io->Address);
 			if (1) enableacpi++;
-print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
+if (D) print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		}
 			break;
 		case ACPI_MADT_TYPE_INTERRUPT_OVERRIDE:
 		{
 			ACPI_MADT_INTERRUPT_OVERRIDE *e = (void *)p;
-			print("What an eyesore. Bus %d, SourceIrq %d, GlobalIrq %d, InitFlags 0x%x\n",
+			if (D) print("What an eyesore. Bus %d, SourceIrq %d, GlobalIrq %d, InitFlags 0x%x\n",
 			      e->Bus, e->SourceIrq, e->GlobalIrq, e->IntiFlags);
 			eyesore[e->GlobalIrq].isor = *e;
 			eyesore[e->GlobalIrq].valid++;
@@ -602,7 +599,7 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 
 	/* Get the _PRT's */
 	as = AcpiGetDevices (nil, device, nil, nil);
-	print("acpigetdevices %d\n", as);
+	if (D) print("acpigetdevices %d\n", as);
 
 /* per device code. Not useful yet.
 
@@ -624,7 +621,7 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		return 0;
 	}
 	doIRQs(nil, root);
-	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
+	if (0) print("ACPICODE: ioapicintrsetup(0xff, DONE\n");
 	print("enableacpi: %d\n", enableacpi);
 	return enableacpi;
 }
@@ -789,7 +786,7 @@ AcpiOsReadPciConfiguration (
 {
 	Pcidev p;
 	p.tbdf = tbdf(PciId);
-	print("%s\n", __func__);
+	if (0) print("%s\n", __func__);
 	switch(Width) {
 	case 32:
 		*Value = pcicfgr32(&p, Reg);
@@ -817,7 +814,7 @@ AcpiOsWritePciConfiguration (
 {
 	Pcidev p;
 	p.tbdf = tbdf(PciId);
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	switch(Width) {
 	case 32:
 		pcicfgw32(&p, Reg, Value);
@@ -843,7 +840,7 @@ AcpiOsReadable (
     void                    *Pointer,
     ACPI_SIZE               Length)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -854,7 +851,7 @@ AcpiOsWritable (
     void                    *Pointer,
     ACPI_SIZE               Length)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -864,7 +861,7 @@ UINT64
 AcpiOsGetTimer (
     void)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -875,7 +872,7 @@ AcpiOsSignal (
     UINT32                  Function,
     void                    *Info)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -888,7 +885,7 @@ AcpiOsPrintf (
 	va_list args;
 
 	va_start(args, Format);
-	print((char *)Format, args);
+	if (P) print((char *)Format, args);
 	va_end(args);
 }
 
@@ -901,7 +898,7 @@ AcpiOsVprintf (
 	 * the va_list argument. I couldn't find any other way to do this. */
 	static char buf[1024];
 	vseprint(buf, &buf[1023], (char *)Format, Args);
-	print(buf);
+	if (P) print(buf);
 }
 
 void
@@ -926,8 +923,8 @@ AcpiOsMapMemory (
     ACPI_SIZE               Length)
 {
 	void *v = vmap(Where, Length);
-	print("%s %p = vmap(%p,0x%x)\n", __func__, v, (void*)Where, Length);
-	print("Val @ %p is 0x%x\n", v, *(int *)v);
+	if (P) print("%s %p = vmap(%p,0x%x)\n", __func__, v, (void*)Where, Length);
+	if (P) print("Val @ %p is 0x%x\n", v, *(int *)v);
 	return v;
 }
 
@@ -936,7 +933,7 @@ AcpiOsUnmapMemory (
     void                    *LogicalAddress,
     ACPI_SIZE               Size)
 {
-	print("%s %p %d \n", __func__, LogicalAddress, Size);
+	if (P) print("%s %p %d \n", __func__, LogicalAddress, Size);
 	vunmap(LogicalAddress, Size);
 }
 
@@ -946,7 +943,7 @@ AcpiOsGetPhysicalAddress (
     ACPI_PHYSICAL_ADDRESS   *PhysicalAddress)
 {
 	ACPI_PHYSICAL_ADDRESS ret = mmuphysaddr((uintptr_t)LogicalAddress);
-	print("%s %p = mmyphysaddr(%p)", __func__, (void *)ret, LogicalAddress);
+	if (P) print("%s %p = mmyphysaddr(%p)", __func__, (void *)ret, LogicalAddress);
 	*PhysicalAddress = ret;
 	return AE_OK;
 }
@@ -1050,7 +1047,7 @@ AcpiOsInstallInterruptHandler (
 		return AE_NO_MEMORY;
 	h->ServiceRoutine = ServiceRoutine;
 	h->Context = Context;
-	print("%s %d %p %p \n", __func__, InterruptNumber, ServiceRoutine, Context);
+	if (P) print("%s %d %p %p \n", __func__, InterruptNumber, ServiceRoutine, Context);
 	/* once enabled, can't be disabled; ignore the return value unless it's nil. */
 	intrenable(InterruptNumber, acpihandler, h, 0x5, "ACPI interrupt handler");
 	return AE_OK;
@@ -1061,7 +1058,7 @@ AcpiOsRemoveInterruptHandler (
     UINT32                  InterruptNumber,
     ACPI_OSD_HANDLER        ServiceRoutine)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -1134,7 +1131,7 @@ AcpiOsReadPort (
 		panic("%s, bad width %d", __func__, Width);
 		break;
 	}
-	print("%s 0x%x 0x%x\n", __func__, Address, *Value);
+	if (P) print("%s 0x%x 0x%x\n", __func__, Address, *Value);
 	return AE_OK;
 }
 
@@ -1158,7 +1155,7 @@ AcpiOsWritePort (
 		panic("%s, bad width %d", __func__, Width);
 		break;
 	}
-	print("%s 0x%x 0x%x\n", __func__, Address, Value);
+	if (P) print("%s 0x%x 0x%x\n", __func__, Address, Value);
 	return AE_OK;
 }
 
@@ -1171,7 +1168,7 @@ AcpiOsReadMemory (
     UINT64                  *Value,
     UINT32                  Width)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -1182,7 +1179,7 @@ AcpiOsWriteMemory (
     UINT64                  Value,
     UINT32                  Width)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }
@@ -1194,7 +1191,7 @@ ACPI_PHYSICAL_ADDRESS
 AcpiOsGetRootPointer (
     void)
 {
-	print("%s returns %p\n", __func__, rsd);
+	if (P) print("%s returns %p\n", __func__, rsd);
 	return (ACPI_PHYSICAL_ADDRESS) PADDR(rsd);
 }
 
@@ -1203,7 +1200,7 @@ AcpiOsPredefinedOverride (
     const ACPI_PREDEFINED_NAMES *InitVal,
     ACPI_STRING                 *NewVal)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	*NewVal = nil;
 	return AE_OK;
 }
@@ -1213,7 +1210,7 @@ AcpiOsTableOverride (
     ACPI_TABLE_HEADER       *ExistingTable,
     ACPI_TABLE_HEADER       **NewTable)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	*NewTable = nil;
 	return AE_OK;
 }
@@ -1224,7 +1221,7 @@ AcpiOsPhysicalTableOverride (
     ACPI_PHYSICAL_ADDRESS   *NewAddress,
     UINT32                  *NewTableLength)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	*NewAddress = (ACPI_PHYSICAL_ADDRESS)nil;
 	return AE_OK;
 }
@@ -1238,7 +1235,7 @@ AcpiOsGetLine (
     UINT32                  BufferLength,
     UINT32                  *BytesRead)
 {
-	print("%s\n", __func__);
+	if (P) print("%s\n", __func__);
 	panic("%s", __func__);
 	return AE_OK;
 }

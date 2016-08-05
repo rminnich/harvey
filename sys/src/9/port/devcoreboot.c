@@ -323,6 +323,7 @@ corebootdevgen(Chan *c, char *name, Dirtab *tab, int ntab, int i, Dir *dp)
 static void
 corebootinit(void)
 {
+	return;
 	get_coreboot_info(&cbinfo);
 }
 
