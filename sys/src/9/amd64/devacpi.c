@@ -341,8 +341,10 @@ resource(ACPI_RESOURCE *r, void *Context)
 
 	devno = irq << 2;
 	print("ioapicintrinit(0xff, 0x%x, 0x%x, 0x%x, 0x%x\n", apicno, irq, devno, low);
-	if (0 && enableacpi)
+	if (enableacpi) {
 		ioapicintrinit(0xff,  apicno, irq, devno, low);
+		enableacpi++;
+	}
 	return 0;
 }
 ACPI_STATUS
@@ -489,8 +491,10 @@ doIRQs(uint8_t*map, Pcidev*p)
 		devno <<= 2;
 		print("and now 0x%x\n", devno);
 		print("ACPICODE: ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%x);\n", bus, apicno, irq, devno, low);
-		if (0 && enableacpi)
+		if (enableacpi){
 			ioapicintrinit(bus, apicno, irq, devno, low);
+			enableacpi++;
+		}
 	}
 
 }
@@ -619,7 +623,7 @@ print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		print("%s: NO ROOT PCI DEVICE?\n", __func__);
 		return 0;
 	}
-	if (0) doIRQs(nil, root);
+	doIRQs(nil, root);
 	print("ACPICODE: ioapicintrinit(0xff, DONE\n");
 	print("enableacpi: %d\n", enableacpi);
 	return enableacpi;
