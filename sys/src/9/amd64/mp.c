@@ -240,7 +240,7 @@ mpparse(PCMP* pcmp, int maxcores)
 			if(memcmp(p+2, mpbusdef[i].type, 6) != 0)
 				continue;
 			if(memcmp(p+2, "ISA   ", 6) == 0){
-				if(mpisabusno != -1){
+				if(hackisabusno != -1){
 					print("mpparse: bus %d already have ISA bus %d\n",
 						p[1], mpisabusno);
 					continue;
