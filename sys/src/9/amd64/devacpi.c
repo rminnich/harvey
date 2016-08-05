@@ -553,8 +553,14 @@ acpiinit(void)
 			ACPI_MADT_LOCAL_APIC *l = (void *)p;
 			if (!l->LapicFlags)
 				break;
-			if (0) apicinit(l->Id, m->Address, apiccnt == 1);
+			/* apicinit is the first thing called. Do it,
+			 * and increment enableacpi (once).
+			 */if (enableacpi == 0){
+			apicinit(l->Id, m->Address, apiccnt == 1);
+			if (! enableacpi)
+				enableacpi = 1;
 print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
+			}
 			apiccnt++;
 		}
 			break;

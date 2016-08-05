@@ -604,7 +604,8 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 		 * This means we can always boot. */
 		enableacpi = acpiinit();
 	}
-
+	//apicinit(0, 0xfee00000, 2); 
+	//enableacpi = 1;
 	mpsinit(maxcores);
 	if (lateinit) {
 		print("<<<<<<<<<<<<<<<<<<<<<<<<< DO IRQs LATE >>>>>>>>>>>>>>>>>>>>>>>>\n");
@@ -630,9 +631,6 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 	print("CODE: apiconline();\n");
 	apiconline();
 	print("CODE: if(! nosmp) sipi();\n");
-	if (enableacpi){
-		die("ACPI after apiconline\n");
-	}
 	/* Forcing to single core if desired */
 	if(!nosmp) {
 		sipi();

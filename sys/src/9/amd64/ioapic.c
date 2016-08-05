@@ -111,7 +111,7 @@ ioapicintrinit(int busno, int apicno, int intin, int devno, uint32_t lo)
 	Rbus *rbus;
 	Rdt *rdt;
 	Apic *apic;
-	print("ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%d\n", busno, apicno, intin, devno, lo);
+	//print("ioapicintrinit(%d, %d, 0x%x, 0x%x, 0x%d\n", busno, apicno, intin, devno, lo);
 	if(busno >= Nbus || apicno >= Napic || nrdtarray >= Nrdt) {
 		print("=============> bail ioapicintrinit bails out early\n");
 		return;
