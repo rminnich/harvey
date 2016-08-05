@@ -55,7 +55,7 @@ char dbgflg[256];
 static int vflag = 1;
 
 int nosmp = 1;
-int enableacpi = 0;
+int enableacpi = 1;
 
 /*
  *	this may need improvement, but right now it's just for
