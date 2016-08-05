@@ -221,6 +221,7 @@ mpparse(PCMP* pcmp, int maxcores)
 			print("CODE: apicinit(%d, %p, %d); \n", p[1], (void *)(uint64_t)l32get(pcmp->apicpa), p[3]&2);
 			apicinit(p[1], l32get(pcmp->apicpa), p[3] & 0x02);
 		}
+		if (enableacpi) print("SKIPPED ACPIINIT in MPSINIT\n");
 //print("MP: add an apic, # %d\n", p[1]);
 		p += 20;
 		break;
@@ -269,6 +270,7 @@ mpparse(PCMP* pcmp, int maxcores)
 //print("CODE: ioapicinit(%d, %p);\n", p[i], l32get(p+4));
 			ioapicinit(p[1], l32get(p+4));
 		}
+		if (enableacpi >= 2) print("SKIPPED ioapicinit in mpsinit\n");
 
 		p += 8;
 		break;
@@ -308,7 +310,8 @@ mpparse(PCMP* pcmp, int maxcores)
 		if (enableacpi < 3) {
 //print("CODE: ioapicintrinit(0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", p[4], p[6], p[7], devno, lo);
 			ioapicintrinit(p[4], p[6], p[7], devno, lo);
-		} 
+		} else
+			print("SKIPPED ioapicintrinit in mpsinit\n");
 
 		p += 8;
 		break;
@@ -504,6 +507,7 @@ mpsinit(int maxcores)
 	 * for later interrupt enabling and application processor
 	 * startup.
 	 */
+	print("MPSINIT: call mpparse\n");
 	mpparse(pcmp, maxcores);
 
 	apicdump();

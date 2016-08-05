@@ -568,7 +568,8 @@ print("ACPICODE: apicinit(%d, %p, %d\n", l->Id, m->Address, apiccnt == 1);
 		{
 			ACPI_MADT_IO_APIC *io = (void *)p;
 			print("IOapic %d @ %p\n", io->Id, io->Address);
-			if (0) ioapicinit(io->Id, io->Address);
+			if (1) ioapicinit(io->Id, io->Address);
+			if (1) enableacpi++;
 print("ACPICODE: ioapicinit(%d, %p);\n", io->Id, (void*)(uint64_t)io->Address);
 		}
 			break;
