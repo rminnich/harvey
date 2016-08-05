@@ -57,7 +57,7 @@ static Mpbus mpbusdef[] = {
 };
 static Mpbus* mpbus[Nbus];
 static int hackisabusno = -1;
-int mpisabusno = -1;
+int mpisabusno = 0xff;
 extern int enableacpi;
 
 static void

@@ -56,7 +56,6 @@ static int vflag = 1;
 
 int nosmp = 1;
 int enableacpi = 0;
-int lateinit = 0;
 
 /*
  *	this may need improvement, but right now it's just for
@@ -151,7 +150,6 @@ options(int argc, char* argv[])
 	// hack.
 	nosmp = dbgflg['n'];
 	enableacpi = dbgflg['a'];
-	lateinit = dbgflg['l'];
 }
 
 void
@@ -606,27 +604,10 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 	}
 	//apicinit(0, 0xfee00000, 2); 
 	//enableacpi = 1;
-	mpsinit(maxcores);
-	if (lateinit) {
-		print("<<<<<<<<<<<<<<<<<<<<<<<<< DO IRQs LATE >>>>>>>>>>>>>>>>>>>>>>>>\n");
-		ioapicintrinit(255, 1, 0x0, 0x0, 67328);
-		ioapicintrinit(255, 1, 0x1, 0x4, 65536);
-		ioapicintrinit(255, 1, 0x2, 0x0, 65536);
-		ioapicintrinit(255, 1, 0x3, 0xc, 65536);
-		ioapicintrinit(255, 1, 0x4, 0x10, 65536);
-		ioapicintrinit(255, 1, 0x5, 0x14, 65536);
-		ioapicintrinit(255, 1, 0x6, 0x18, 65536);
-		ioapicintrinit(2, 1, 0x11, 0xc, 106496);
-		ioapicintrinit(255, 1, 0x8, 0x20, 65536);
-		ioapicintrinit(0, 1, 0x10, 0x1c, 106496);
-		ioapicintrinit(2, 1, 0x13, 0x4, 106496);
-		ioapicintrinit(2, 1, 0x12, 0x0, 106496);
-		ioapicintrinit(255, 1, 0xc, 0x30, 65536);
-		ioapicintrinit(255, 1, 0xd, 0x34, 65536);
-		ioapicintrinit(255, 1, 0xe, 0x38, 65536);
-		ioapicintrinit(255, 1, 0xf, 0x3c, 65536);
-		ioapicintrinit(0, 1, 0x10, 0x3c, 106496);
-	}
+	if (! enableacpi)
+		mpsinit(maxcores);
+	else
+		print("ACPI set up interrupts, SKIPPING mpsinit\n");
 
 	print("CODE: apiconline();\n");
 	apiconline();
