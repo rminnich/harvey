@@ -601,8 +601,10 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 		/* If acpiinit succeeds, we leave enableacpi enabled.
 		 * This means we can always boot. */
 		enableacpi = acpiinit();
+		/* Until this is working better, delay for a minute so we can
+		 * see the messages. */
+		delay(60000);
 	}
-	delay(60000);
 	//apicinit(0, 0xfee00000, 2); 
 	//enableacpi = 1;
 	if (! enableacpi)
