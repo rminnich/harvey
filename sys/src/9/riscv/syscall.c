@@ -225,7 +225,7 @@ noerrorsleft(void)
 	}
 }
 
-int printallsyscalls = 0;
+int printallsyscalls = 1;
 
 void
 syscall(unsigned int scallnr, Ureg *ureg)
@@ -345,18 +345,20 @@ syscall(unsigned int scallnr, Ureg *ureg)
 	/*
 	 * Put return value in frame.
 	 */
-	if (0)print("return is %p\n", ar0.p);
+	if (1)print("return is %p\n", ar0.p);
 	ureg->a0 = ar0.p;
-	if (0)print("ureg->ip is %p val %p\n", &ureg->ip, ureg->ip);
-
+	if (1)print("ureg->ip is %p val %p\n", &ureg->ip, ureg->ip);
 	if (up->pid == 0 || printallsyscalls) {
-		stopns = todget(nil);
+print("all\n");
+		stopns = 0; //todget(nil);
+		if (0){
 		syscallfmt('X', scallnr, &ar0, startns, stopns, a0, a1, a2, a3, a4, a5);
 		if(up->syscalltrace) {
 			print("X %s\n", up->syscalltrace);
 			free(up->syscalltrace);
 			up->syscalltrace = nil;
 		}
+		} print("skipping print\n");
 	}
 
 	if(up->procctl == Proc_tracesyscall){
@@ -375,14 +377,14 @@ syscall(unsigned int scallnr, Ureg *ureg)
 	}else if(up->procctl == Proc_totc || up->procctl == Proc_toac)
 		procctl(up);
 
-	if (0) hi("past sysretfmt\n");
+	if (1) hi("past sysretfmt\n");
 	up->insyscall = 0;
 	up->psstate = 0;
 
 	if(scallnr == NOTED)
 		noted(ureg, a0);
 
-	if (0) hi("now to splhi\n");
+	if (1) hi("now to splhi\n");
 	splhi();
 	if(scallnr != RFORK && (up->procctl || up->nnote))
 		notify(ureg);
@@ -392,9 +394,9 @@ syscall(unsigned int scallnr, Ureg *ureg)
 		sched();
 		splhi();
 	}
-	if (0) hi("call kexit\n");
+	if (1) hi("call kexit\n");
 	kexit(ureg);
-	if (0) hi("done kexit\n");
+	if (1) hi("done kexit\n");
 }
 
 uintptr_t

@@ -39,6 +39,7 @@ void	asminit(void);
 void	asmmapinit(uintmem, uintmem, int);
 extern void asmmodinit(uint32_t, uint32_t, char*);
 void	noerrorsleft(void);
+void	archcons(void);
 void	archinit(void);
 void	archreset(void);
 int64_t	archhz(void);

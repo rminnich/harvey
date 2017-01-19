@@ -1483,10 +1483,12 @@ procdump(void)
 	else
 		print("no current process\n");
 	for(i=0; (p = psincref(i)) != nil; i++) {
+		print("Check pid %d\n", i);
 		if(p->state != Dead)
 			dumpaproc(p);
 		psdecref(p);
 	}
+	print("Done procdump\n");
 }
 
 /*
@@ -1547,18 +1549,22 @@ scheddump(void)
 	Sched *sch;
 	Schedq *rq;
 
+	print("scheddump\n");
 	for(sch = run; sch < &run[Nsched]; sch++){
+		print("\tsch %p\n", sch);
 		for(rq = &sch->runq[Nrq-1]; rq >= sch->runq; rq--){
+			print("\t\trq %p\n", rq);
 			if(rq->head == 0)
 				continue;
-			print("sch%ld rq%ld:", sch - run, rq-sch->runq);
+			print("\t\t\tsch%ld rq%ld:", sch - run, rq-sch->runq);
 			for(p = rq->head; p; p = p->rnext)
-				print(" %d(%lu)", p->pid, machp()->ticks - p->readytime);
+				print("\t\t\t %d(%lu)", p->pid, machp()->ticks - p->readytime);
 			print("\n");
 			delay(150);
 		}
-		print("sch%ld: nrdy %d\n", sch - run, sch->nrdy);
+		print("\tsch%ld: nrdy %d\n", sch - run, sch->nrdy);
 	}
+	print("done\n");
 }
 
 /* Helper for proc_create and fork */

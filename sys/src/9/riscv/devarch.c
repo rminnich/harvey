@@ -520,15 +520,28 @@ numcoresread(Chan* c, void *a, int32_t n, int64_t off)
         return readstr(off, a, n, buf);
 }
 
-Queue *keybq;
+Queue *keybq, *controltq;
 void putchar(int);
 /* total hack. */
+static void
+controltkproc(void* v)
+{
+	char buf[1];
+	print("controlt kproc starts\n");
+	while (qread(controltq, buf, 1) > 0){
+		print("controltkproc '%c'\n", buf[0]);
+		catchcontrolt(buf[0]);
+	}
+}
+
 void
 kbdputsc(int data, int _)
 {
 	static char line[512];
 	static int len;
 	putchar(data);
+	qiwrite(controltq, &data, 1);
+	catchcontrolt(data);
 	line[len++] = data;
 	if (keybq && (data == '\n')) {
 		qiwrite(keybq, line, len);
@@ -540,12 +553,11 @@ static int32_t
 consoleread(Chan* c, void *vbuf, int32_t len, int64_t off64)
 {
 	int amt;
-	if (!keybq) {
-		keybq = qopen(32, 0, 0, 0);
-		if (!keybq)
-			panic("keyboard queue alloc failed");
-	}
+	print("-------------> consoleread: ");
 	amt = qread(keybq, vbuf, len);
+	print("Got %d bytes\n", amt);
+
+	print("return %d\n", amt);
 	return amt;
 }
 
@@ -566,6 +578,18 @@ archinit(void)
 	addarchfile("cputype", 0444, cputyperead, nil);
 	addarchfile("numcores", 0444, numcoresread, nil);
 	addarchfile("cons", 0666, consoleread, consolewrite);
+}
+
+void archcons(void)
+{
+	keybq = qopen(32, 0, 0, 0);
+	if (!keybq)
+		panic("keyboard queue alloc failed");
+	controltq = qopen(32, 0, 0, 0);
+	if (!controltq)
+		panic("keyboard queue alloc failed");
+	if (1) kproc("controltkproc", controltkproc, 0);
+	print("ARC CONSOLE SET UP\n");
 }
 
 void
@@ -603,8 +627,13 @@ ms(void)
 void
 timerset(uint64_t x)
 {
+	static uint64_t lastx = 0;
+	if ((x - lastx) > 1000000)
+		print("%lld\n", x);
+	lastx = x;
+#if 0
 	extern uint64_t *mtime;
-	uint64_t now;
+	uint64_t now, xnow;
 	int64_t delta;
 	// bust is the number of times that we are called
 	// with a delta < 0
@@ -613,18 +642,25 @@ timerset(uint64_t x)
 	now = rdtsc();
 	//print("now 0x%llx timerset to 0x%llx\n", now , x);
 	// I have no fucking clue why scaling it breaks this but it does.
-	//now = fastticks2ns(now);
-	//print("now 0x%llx timerset to 0x%llx\n", now , x);
-	delta = x - now;
-	//print("delta is %llx\n", delta);
+	xnow = fastticks2ns(now);
+	print("now %lld xnow %lld timerset to %lld\n", now, xnow , x);
+	print("x is %lld milliseconds\n", x/1000000);
+	print("mtim is %lld\n", *mtime);
+	delta = x - xnow;
+	print("delta is %lld\n", delta);
 	delta /= 1000;
+	print("delta is %lld\n", delta);
 	if (delta < 1) {
 		if (++bust == 0)
 			print("timerset: delta was < 1 256 times\n");
 		delta = 10 /* one microsecond */ * 1000 /* one millisecond */ ;
 	}
 	//print("adjest x to timer ticks, divide by 500 ... 0x%llx %llx %llx \n", *mtime , delta, *mtime + delta);
-	sbi_set_mtimecmp(*mtime + delta);
+	// just make it a goddam second.
+//	sbi_set_mtimecmp(*mtime + 10000000); //delta);
+#endif
+//	print("X");
+	sbi_set_mtimecmp(x/100); //  + 1000000);
 }
 
 void
@@ -632,11 +668,13 @@ delay(int millisecs)
 {
 	uint64_t r, t;
 
+print("delay %d\n", millisecs);
 	if(millisecs <= 0)
 		millisecs = 1;
 	cycles(&r);
 	for(t = r + (sys->cyclefreq*millisecs)/1000ull; r < t; cycles(&r))
 		;
+print("done\n");
 }
 
 /*

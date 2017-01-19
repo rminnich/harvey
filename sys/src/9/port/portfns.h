@@ -56,6 +56,8 @@ void		confinit(void);
 int		consactive(void);
 void		(*consdebug)(void);
 void		(*consputs)(char*, int);
+void            controlt(int);
+void            catchcontrolt(int c);
 Block*		copyblock(Block*, int);
 void		copypage(Page*, Page*);
 void		cunmount(Chan*, Chan*);

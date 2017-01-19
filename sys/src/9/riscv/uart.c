@@ -76,22 +76,22 @@ void putchar(uint8_t c)
 // Get a 7-bit char. < 0 means err.
 int getchar(void)
 {
-	int c;
+	int c = -1;
 	switch(uartpa){
 	case 0x40001000:
-		return spike_getchar();
+		c = spike_getchar();
 		break;
 	case 0x42000000:
 		c = lowrisc_getchar(0);
 		// bug in lowrisc hardware
 		if (c == 0)
-			return -1;
-		return c;
+			c = -1;
 		break;
 	default:
 		break;
 	}
-	return -1;
+
+	return c;
 }
 
 

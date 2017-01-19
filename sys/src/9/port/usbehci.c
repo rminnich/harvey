@@ -1824,7 +1824,6 @@ clrhalt(Ep *ep)
 	}
 }
 
-/*
 static void
 xdump(char* pref, void *qh)
 {
@@ -1840,7 +1839,6 @@ xdump(char* pref, void *qh)
 			print(" %#8.8ulx", u[i]);
 	print("\n");
 }
-*/
 
 static int32_t
 episohscpy(Ctlr *ctlr, Ep *ep, Isoio* iso, unsigned char *b, int32_t count)

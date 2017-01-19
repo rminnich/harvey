@@ -43,6 +43,9 @@ startboot(char *argv0, char **argv)
 	bind(ec, env, MAFTER);
 	bind(e, env, MCREATE|MAFTER);
 	bind(s, srv, MREPL|MCREATE);
+	int amt;
+	while ((amt = read(0, buf, 200)) > 0)
+		write(1, buf, amt);
 	exec(boot, argv);
 
 	rerrstr(buf, sizeof buf);

@@ -19,7 +19,7 @@
 #include	<trace.h>
 
 #undef DBG
-#define DBG if(0)print
+#define DBG if(1)print
 
 
 void
@@ -298,7 +298,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	int32_t hdrsz;
 	uintptr_t entry, stack;
 
-
 	file = nil;
 	elem = nil;
 	switch(flags){
@@ -320,7 +319,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		up->ac = nil;
 		nexterror();
 	}
-
 	/*
 	 * Open the file, remembering the final element and the full name.
 	 */
@@ -336,7 +334,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		nexterror();
 	}
 	kstrdup(&elem, up->genbuf);
-
 	/*
 	 * Read the header.
 	 * If it's a #!, fill in progarg[] with info then read a new header
@@ -379,13 +376,11 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	/*
 	 * #! has had its chance, now we need a real binary.
 	 */
-
 	nldseg = elf64ldseg(chan, &entry, &ldseg, cputype, BIGPGSZ);
 	if(nldseg == 0){
 		print("execac: elf64ldseg returned 0 segs!\n");
 		error(Ebadexec);
 	}
-
 	/* TODO(aki): not sure I see the point
 	if(up->ac != nil && up->ac != machp())
 		up->color = corecolor(up->ac->machno);
@@ -415,7 +410,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		qunlock(&up->seglock);
 		nexterror();
 	}
-
 	for(i = 0; i < NSEG; i++)
 		if(up->seg[i] == nil)
 			break;
@@ -440,7 +434,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	tos->pcycles = -tos->pcycles;
 	tos->kcycles = tos->pcycles;
 	tos->clock = 0;
-
 	/*
 	 * Next push any arguments found from a #! header.
 	 */
@@ -449,7 +442,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		stack -= n;
 		memmove(UINT2PTR(stack), progarg[i], n);
 	}
-
 	/*
 	 * Copy the strings pointed to by the syscall argument argv into
 	 * the temporary stack segment, being careful to check
@@ -485,7 +477,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	}
 	if(argc < 1)
 		error(Ebadexec);
-
 	/*
 	 * Before pushing the argument pointers onto the temporary stack,
 	 * which might involve a demand-page, check there is room for the
@@ -505,7 +496,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		//iprint("stck too small?\n");
 		error(Ebadexec);
 	}
-
 	argv = (char**)stack;
 	*--argv = nil;
 	for(i = 0; i < argc; i++){
@@ -513,7 +503,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		p += strlen(p) + 1;
 	}
 	*--argv = (void *)(uintptr_t) argc;
-
 	/*
 	 * Make a good faith copy of the args in up->args using the strings
 	 * in the temporary stack segment. The length must be > 0 as it
@@ -532,12 +521,10 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		free(p);
 		nexterror();
 	}
-
 	memmove(p, a, n);
 	while(n > 0 && (p[n-1] & 0xc0) == 0x80)
 		n--;
 	p[n-1] = '\0';
-
 	/*
 	 * All the argument processing is now done, ready to commit.
 	 */
@@ -548,14 +535,12 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	up->args = p;
 	up->nargs = n;
 	poperror();				/* p (up->args) */
-
 	/*
 	 * Close on exec
 	 */
 	fg = up->fgrp;
 	for(i=0; i<=fg->maxfd; i++)
 		fdclose(i, CCEXEC);
-
 	/*
 	 * Free old memory, except for the temp stack (obviously)
 	 */
@@ -565,19 +550,16 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 			putseg(up->seg[i]);
 		up->seg[i] = nil;
 	}
-
 	/* put the stack in first */
 	sno = 0;
 	up->seg[sno++] = s;
 	s->base = USTKTOP-USTKSIZE;
 	s->top = USTKTOP;
 	relocateseg(s, USTKTOP-TSTKTOP);
-
 	img = nil;
 	uintptr_t datalim;
 	datalim = 0;
 	for(i = 0; i < nldseg; i++){
-
 		if(img == nil){
 			img = attachimage(ldseg[i].type, chan, up->color,
 				ldseg[i].pg0vaddr,
@@ -605,7 +587,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	s = newseg(SG_BSS|SG_READ|SG_WRITE, (datalim + BIGPGSZ-1) & ~(BIGPGSZ-1), 0);
 	up->seg[sno++] = s;
 	s->color= up->color;
-
 	for(i = 0; i < sno; i++){
 		s = up->seg[i];
 		DBG(
@@ -621,13 +602,11 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 			s->ldseg.memsz
 		);
 	}
-
 	/* the color of the stack was decided when we created it before,
 	 * it may have nothing to do with the color of other segments.
 	 */
 	qunlock(&up->seglock);
 	poperror();				/* seglock */
-
 
 	/*
 	 *  '/' processes are higher priority
@@ -641,7 +620,6 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	poperror();				/* chan, elem, file */
 	cclose(chan);
 	free(file);
-
 	/*
 	 *  At this point, the mmu contains info about the old address
 	 *  space and needs to be flushed
@@ -658,10 +636,8 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 	qunlock(&up->debug);
 	if(up->hang)
 		up->procctl = Proc_stopme;
-
 	/* we need to compte the value of &argv in user mode and then push that. */
 	ar0->v = sysexecregs(entry, TSTKTOP - PTR2UINT(argv), ((void *)tos) + (USTKTOP-TSTKTOP)/sizeof(void *));
-
 	if(flags == EXAC){
 		up->procctl = Proc_toac;
 		up->prepagemem = 1;
@@ -679,7 +655,6 @@ sysexecac(Ar0* ar0, ...)
 	/*
 	 * void* execac(int flags, char* name, char* argv[]);
 	 */
-
 	flags = va_arg(list, unsigned int);
 	file = va_arg(list, char*);
 	file = validaddr(file, 1, 0);

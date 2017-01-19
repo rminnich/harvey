@@ -96,11 +96,18 @@ void hart(void)
 uint64_t
 rdtsc(void)
 {
+static char crap[128];
 	uint64_t cycles;
 //	msg("rdtsc\n");
+//I_AM_HERE
 	cycles = read_csr(/*s*/cycle);
-//print("cycles in rdtsc is 0x%llx\n", cycles);
+	if (0){
+sprint(crap, "cycles in rdtsc is 0x%llx\n", cycles);
+for(int i = 0; i < strlen(crap); i++)
+	putchar(0);
+}
 //	msg("done rdts\n");
+//print("R");
 	return cycles;
 }
 
@@ -166,6 +173,7 @@ print("1\n");
 		poperror();
 	}
 	kproc("alarm", alarmkproc, 0);
+	archcons();
 	//nixprepage(-1);
 	print("TOUSER: kstack is %p\n", up->kstack);
 
