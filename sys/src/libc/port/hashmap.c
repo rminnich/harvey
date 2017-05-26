@@ -48,7 +48,7 @@ scramble64(uint64_t a)
 	return (size_t)a;
 }
 
-static int
+static char *
 hmapput1(Hashtable *cur, uint64_t key, uint64_t val)
 {
 	Hashentry *tab = cur->tab;
@@ -60,15 +60,15 @@ hmapput1(Hashtable *cur, uint64_t key, uint64_t val)
 			he->val = val;
 			he->key = key;
 			cur->len++;
-			return 0;
+			return nil;
 		}
 		if(he->key == key)
-			return -1; // key already in hmap, bail out.
+			return "key already in hmap";
 	}
-	return -1; // hmap full
+	return "hmap full";
 }
 
-static int
+static char *
 hmapget1(Hashtable *cur, uint64_t key, Hashentry **hep)
 {
 	Hashentry *tab = cur->tab;
@@ -79,15 +79,15 @@ hmapget1(Hashtable *cur, uint64_t key, Hashentry **hep)
 		Hashentry *he = tab + hash;
 		if(he->key == key){
 			*hep = he;
-			return 0;
+			return nil;
 		}
 		if(!ischain(he))
-			return -1; // not found
+			return "not found";
 	}
-	return -1; // hmap full
+	return "hmap full";
 }
 
-static int
+static char *
 hmapresize(Hashmap *map, int isgrow)
 {
 	Hashtable *cur = map->cur;
@@ -104,7 +104,7 @@ hmapresize(Hashmap *map, int isgrow)
 		for(size_t i = 0; i < cap; i++){
 			Hashentry *he = tab + i;
 			if(!isfree(he)){
-				int err;
+				char *err;
 				if((err = hmapput1(next, he->key, he->val)) != 0)
 					return err;
 			}
@@ -118,31 +118,31 @@ hmapresize(Hashmap *map, int isgrow)
 	return 0;
 }
 
-int
+char *
 hmapinit(Hashmap *map)
 {
 	memset(map, 0, sizeof map[0]);
 	map->cur = map->tabs+0;
 	map->next = map->tabs+1;
-	return 0;
+	return nil;
 }
 
-int
+char *
 hmapfree(Hashmap *map)
 {
 	if(map->cur->tab != nil)
 		free(map->cur->tab);
 	if(map->next->tab != nil)
 		free(map->next->tab);
-	return 0;
+	return nil;
 }
 
-int
+char *
 hmapdel(Hashmap *map, uint64_t key, uint64_t *valp)
 {
 	Hashtable *cur = map->cur;
 	Hashentry *he;
-	int err;
+	char *err;
 	if((err = hmapget1(cur, key, &he)) != 0)
 		return err;
 	*valp = he->val;
@@ -151,33 +151,33 @@ hmapdel(Hashmap *map, uint64_t key, uint64_t *valp)
 	if(cur->cap > MinCap && cur->len < cur->cap/4)
 		if((err = hmapresize(map, 0)) != 0)
 			return err;
-	return 0;
+	return nil;
 }
 
-int
+char *
 hmapget(Hashmap *map, uint64_t key, uint64_t *valp)
 {
 	Hashtable *cur = map->cur;
 	Hashentry *he;
-	int err;
+	char *err;
 	if((err = hmapget1(cur, key, &he)) != 0)
 		return err;
 	*valp = he->val;
-	return 0;
+	return nil;
 }
 
-int
+char *
 hmapput(Hashmap *map, uint64_t key, uint64_t val)
 {
 	Hashtable *cur = map->cur;
-	int err;
+	char *err;
 	if(cur->len >= 3*(cur->cap/4))
 		if((err = hmapresize(map, 1)) != 0)
 			return err;
 	return hmapput1(map->cur, makekey(key), val);
 }
 
-int
+char *
 hmapstats(Hashmap *map, size_t *chains, size_t nchains)
 {
 	Hashtable *cur = map->cur;
@@ -194,5 +194,5 @@ hmapstats(Hashmap *map, size_t *chains, size_t nchains)
 			}
 		}
 	}
-	return 0;
+	return nil;
 }

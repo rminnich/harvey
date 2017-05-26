@@ -21,6 +21,7 @@ typedef struct Egrp	Egrp;
 typedef struct Evalue	Evalue;
 typedef struct Fastcall Fastcall;
 typedef struct Fgrp	Fgrp;
+typedef struct Hpm      Hpm;
 typedef struct Image	Image;
 typedef struct Kzio 	Kzio;
 typedef struct Ldseg	Ldseg;
@@ -70,8 +71,21 @@ typedef int    Devgen(Chan*, char*, Dirtab*, int, int, Dir*);
 
 
 #include <fcall.h>
+#include <hashmap.h>
 
 #define	ROUND(s, sz)	(((s)+(sz-1))&~(sz-1))
+
+// A Hash Page Map (Hpm) has, for each page in the map, its type, base, size,
+// chan to read from and offset on that channel, and a kva pointing to the data
+// once it is read in.
+struct Hpm {
+	uintptr_t type;
+	uintptr_t base;
+	uintptr_t size;
+	Chan *chan;
+	off_t offset;
+	void *kva;
+};
 
 struct Ref
 {
@@ -958,6 +972,9 @@ struct Proc
 	Strace *strace;
 	int strace_on;
 	int strace_inherit;
+
+	/* kill segements. Die. Die. Die. */
+	Hashmap pages;
 };
 
 struct Procalloc

@@ -278,6 +278,23 @@ l2be(int32_t l)
 }
 #endif
 
+void addpages(Proc *p, int type, uintptr_t base, uint64_t size)
+{
+	Hpm *hpm;
+	char *err;
+	print("%s(%d): addpages: insert[%#x, %#p, %#x]\n", p->args, p->pid, type, base, size);
+	for(uintptr_t b = base; b < base + size; b += BIGPGSZ) {
+		hpm = malloc(sizeof *hpm);
+		if (!hpm)
+			panic("no more memory in addpages");
+		hpm->type = type;
+		hpm->base = b;
+		hpm->size = BIGPGSZ;
+		if ((err = hmapput(&p->pages, b, (uint64_t) hpm)))
+			panic("%s(%d): hmap insert[%#x, %#p, %#x]: %s", p->args, p->pid, type, base, size, err);
+	}
+}
+
 /*
  * flags can ONLY specify that you want an AC for you, or
  * that you want an XC for you.
@@ -423,6 +440,7 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		error("exeac: no free segment slots");
 	sno = i;
 	up->seg[sno] = newseg(SG_STACK|SG_READ|SG_WRITE, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ);
+	addpages(up, SG_STACK|SG_READ|SG_WRITE, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ);
 	up->seg[sno]->color = up->color;
 
 	/*

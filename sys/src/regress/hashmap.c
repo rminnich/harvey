@@ -31,18 +31,18 @@ main(void)
 			keys[i] = rnd + ((uintptr_t)i<<12);
 
 		for(i = 0; i < nkeys; i++){
-			int err;
+			char *err;
 			if((err = hmapput(&map, keys[i], (uint64_t)i)) != 0){
-				fprint(2, "hmapput: error: %d\n", err);
-				exits(smprint("hmapput: error: %d\n", err));
+				fprint(2, "hmapput: error: %s\n", err);
+				exits(smprint("hmapput: error: %s\n", err));
 			}
 		}
 		for(i = 0; i < nkeys; i++){
 			uint64_t val;
-			int err;
+			char *err;
 			if((err = hmapget(&map, keys[i], &val)) != 0){
-				fprint(2, "hmapget: error: %d\n", err);
-				exits(smprint("hmapget: error: %d\n", err));
+				fprint(2, "hmapget: error: %s\n", err);
+				exits(smprint("hmapget: error: %s\n", err));
 			}
 			if(val != (uint64_t)i){
 				fprint(2, "got the wrong val.\n");
@@ -61,10 +61,10 @@ main(void)
 		}
 		for(i = 0; i < nkeys; i++){
 			uint64_t val;
-			int err;
+			char *err;
 			if((err = hmapdel(&map, keys[i], &val)) != 0){
-				fprint(2, "hmapget: error: %d\n", err);
-				exits(smprint("hmapget: error: %d\n", err));
+				fprint(2, "hmapget: error: %s\n", err);
+				exits(smprint("hmapget: error: %s\n", err));
 			}
 			if(val != (uint64_t)i){
 				fprint(2, "got the wrong val.\n");
@@ -84,20 +84,20 @@ main(void)
 		i = rand()%maxkeys;
 		uintptr_t key = (uintptr_t)keys[i];
 		if((key&1) == 0){
-			int err;
+			char *err;
 			if((err = hmapput(&map, key, (uint64_t)i)) != 0){
-				fprint(2, "hmapput: error: %d\n", err);
-				exits(smprint("hmapput: error: %d\n", err));
+				fprint(2, "hmapput: error: %s\n", err);
+				exits(smprint("hmapput: error: %s\n", err));
 			}
 			key |= 1;
 			keys[i] = key;
 		} else {
 			uint64_t val;
-			int err;
+			char *err;
 			key &= ~1;
 			if((err = hmapdel(&map, key, &val)) != 0){
-				fprint(2, "hmapget: error: %d\n", err);
-				exits(smprint("hmapget: error: %d\n", err));
+				fprint(2, "hmapget: error: %s\n", err);
+				exits(smprint("hmapget: error: %s\n", err));
 			}
 			if(val != (uint64_t)i){
 				fprint(2, "got the wrong val.\n");
@@ -111,11 +111,11 @@ main(void)
 		if((key&1) == 0)
 			continue;
 		uint64_t val;
-		int err;
+		char *err;
 		key &= ~1;
 		if((err = hmapdel(&map, key, &val)) != 0){
-			fprint(2, "hmapget: error: %d\n", err);
-			exits(smprint("hmapget: error: %d\n", err));
+			fprint(2, "hmapget: error: %s\n", err);
+			exits(smprint("hmapget: error: %s\n", err));
 		}
 		if(val != (uint64_t)i){
 			fprint(2, "got the wrong val.\n");

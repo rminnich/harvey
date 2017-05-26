@@ -20,9 +20,9 @@ struct Hashmap {
 	Hashtable tabs[2];
 };
 
-int hmapinit(Hashmap *ht);
-int hmapfree(Hashmap *ht);
-int hmapdel(Hashmap *ht, uint64_t key, uint64_t *valp);
-int hmapget(Hashmap *ht, uint64_t key, uint64_t *valp);
-int hmapput(Hashmap *ht, uint64_t key, uint64_t val);
-int hmapstats(Hashmap *ht, size_t *lens, size_t nlens);
+char * hmapinit(Hashmap *ht);
+char * hmapfree(Hashmap *ht);
+char * hmapdel(Hashmap *ht, uint64_t key, uint64_t *valp);
+char * hmapget(Hashmap *ht, uint64_t key, uint64_t *valp);
+char * hmapput(Hashmap *ht, uint64_t key, uint64_t val);
+char * hmapstats(Hashmap *ht, size_t *lens, size_t nlens);
