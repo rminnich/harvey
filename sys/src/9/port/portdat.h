@@ -76,15 +76,15 @@ typedef int    Devgen(Chan*, char*, Dirtab*, int, int, Dir*);
 #define	ROUND(s, sz)	(((s)+(sz-1))&~(sz-1))
 
 // A Hash Page Map (Hpm) has, for each page in the map, its type, base, size,
-// chan to read from and offset on that channel, and a kva pointing to the data
+// chan to read from and offset on that channel, and a Pte pointing to the data
 // once it is read in.
 struct Hpm {
 	uintptr_t type;
 	uintptr_t base;
 	uintptr_t size;
 	Chan *chan;
-	off_t offset;
-	void *kva;
+	uint64_t offset;
+	Pte *pte;
 };
 
 struct Ref
