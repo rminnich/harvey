@@ -435,3 +435,7 @@ int alloc_cpu_buffers(void);
 
 #define I_AM_HERE print("Core 0 is in %s() at %s:%d\n", \
                          __FUNCTION__, __FILE__, __LINE__);
+
+/* hash address space */
+void dumphpm(Hpm *h);
+Hpm *phmapget(Proc *p, uintptr_t addr);
