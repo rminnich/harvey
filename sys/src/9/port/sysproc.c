@@ -290,7 +290,7 @@ void addpages(Proc *p, int type, uintptr_t base, uint64_t size)
 		hpm->type = type;
 		hpm->base = b;
 		hpm->size = BIGPGSZ;
-		if ((err = hmapput(&p->pages, b, (uint64_t) hpm))) {
+		if ((err = phmapput(p, hpm))) {
 			hmapget(&p->pages, b, (uint64_t*) &hpm);
 			dumphpm(hpm);
 			print("%s(%d): hmap insert[%#x, %#p, %#x]: %s", p->args, p->pid, type, base, size, err);
