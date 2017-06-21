@@ -21,7 +21,6 @@ typedef struct Egrp	Egrp;
 typedef struct Evalue	Evalue;
 typedef struct Fastcall Fastcall;
 typedef struct Fgrp	Fgrp;
-typedef struct Hpm      Hpm;
 typedef struct Image	Image;
 typedef struct Kzio 	Kzio;
 typedef struct Ldseg	Ldseg;
@@ -69,23 +68,12 @@ typedef struct Watermark Watermark;
 typedef struct Zseg	Zseg;
 typedef int    Devgen(Chan*, char*, Dirtab*, int, int, Dir*);
 
+typedef Pte Hpm;
 
 #include <fcall.h>
 #include <hashmap.h>
 
 #define	ROUND(s, sz)	(((s)+(sz-1))&~(sz-1))
-
-// A Hash Page Map (Hpm) has, for each page in the map, its type, base, size,
-// chan to read from and offset on that channel, and a Pte pointing to the data
-// once it is read in.
-struct Hpm {
-	uintptr_t type;
-	uintptr_t base;
-	uintptr_t size;
-	Chan *chan;
-	uint64_t offset;
-	Pte *pte;
-};
 
 struct Ref
 {
@@ -398,6 +386,7 @@ struct Page
 	Page	*prev;
 	Page	*hash;			/* Image hash chains */
 	int	pgszi;			/* size index in machp()->pgsz[] */
+	uint64_t offset;
 };
 
 struct Image
@@ -436,6 +425,10 @@ struct Image
 
 struct Pte
 {
+	uintptr_t type;
+	uintptr_t base;
+	uintptr_t size;
+
 	Page	**first;		/* First used entry */
 	Page	**last;		/* Last used entry */
 	Page	*pages[];	/* Page map for this chunk of pte */
@@ -974,7 +967,7 @@ struct Proc
 	int strace_inherit;
 
 	/* kill segements. Die. Die. Die. */
-	Hashmap pages;
+	Hashmap ptes;
 };
 
 struct Procalloc

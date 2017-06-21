@@ -50,12 +50,16 @@ fault(uintptr_t addr, uintptr_t pc, int ftype)
 
 	machp()->pfault++;
 	spllo();
+	{
 	Hpm *h;
-	h = phmapget(up, addr);
-	if (!h) {
+	uint64_t type;
+	char *err;
+	err = phmapget(up, addr, &h, &type);
+	if (err) {
 		print("%d: did not find %#p\n", up->pid, addr);
+	} else 
+	print("fault: %d, addr %#p, found %#p, type %#x\n", up->pid, addr, h, type);
 	}
-	print("fault: %d, addr %#p, found %#p\n", up->pid, addr, h);
 	for(i = 0;; i++) {
 		s = seg(up, addr, 1);	 /* leaves s->lk qlocked if seg != nil */
 		//print("%s fault seg for %p is %p base %p top %p\n", faulttypes[ftype], addr, s, s->base, s->top);

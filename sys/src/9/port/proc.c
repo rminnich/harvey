@@ -840,7 +840,7 @@ newproc(void)
 	p->ac = nil;
 	p->nfullq = 0;
 	memset(&p->MMU, 0, sizeof p->MMU);
-	hmapinit(&p->pages);
+	hmapinit(&p->ptes);
 	return p;
 }
 

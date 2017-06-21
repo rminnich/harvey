@@ -438,5 +438,6 @@ int alloc_cpu_buffers(void);
 
 /* hash address space */
 void dumphpm(Hpm *h);
-Hpm *phmapget(Proc *p, uintptr_t addr);
-char *phmapput(Proc *p, Hpm *h);
+char *phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type);
+
+char *phmapput(Proc *p, uint64_t addr, Hpm *h);

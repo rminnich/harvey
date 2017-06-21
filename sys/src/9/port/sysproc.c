@@ -278,24 +278,20 @@ l2be(int32_t l)
 }
 #endif
 
-void addpages(Proc *p, int type, uintptr_t base, uint64_t size)
+// Add pages. There is one special case: if there is no PTE yet, we add a nil pointer
+// to the appropriate map. with the low order bits being the type.
+void addpages(Proc *p, uint64_t addr, uint64_t size, uint8_t type)
 {
 	Hpm *hpm;
 	char *err;
-	print("%s(%d): addpages: insert[%#x, %#p, %#x]\n", p->args, p->pid, type, base, size);
-	for(uintptr_t b = base; b < base + size; b += BIGPGSZ) {
-		hpm = malloc(sizeof *hpm);
-		if (!hpm)
-			panic("no more memory in addpages");
-		hpm->type = type;
-		hpm->base = b;
-		hpm->size = BIGPGSZ;
-		if ((err = phmapput(p, hpm))) {
-			hmapget(&p->pages, b, (uint64_t*) &hpm);
-			dumphpm(hpm);
-			print("%s(%d): hmap insert[%#x, %#p, %#x]: %s", p->args, p->pid, type, base, size, err);
+	print("%s(%d): addpages: insert[%#x, %#p, %#x]\n", p->args, p->pid, addr, size, type);
+	hpm = (void *)(uintptr_t)type;
+	for(uintptr_t b = addr; b < addr + size; b += BIGPGSZ) {
+		if ((err = phmapput(p, addr, hpm))) {
+			print("%s(%d): hmap insert[%#x] %#x]: %s", p->args, p->pid, addr, hpm, err);
 		}
 	}
+	print("%s(%d): addpages: done\n", p->args, p->pid);
 }
 
 /*
@@ -443,7 +439,7 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		error("exeac: no free segment slots");
 	sno = i;
 	up->seg[sno] = newseg(SG_STACK|SG_READ|SG_WRITE, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ);
-	addpages(up, SG_STACK|SG_READ|SG_WRITE, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ);
+	addpages(up, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ, SG_STACK|SG_READ|SG_WRITE);
 	up->seg[sno]->color = up->color;
 
 	/*

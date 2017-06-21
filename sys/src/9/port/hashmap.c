@@ -20,33 +20,39 @@ dumphpm(Hpm *h)
 	print("Type %#x ", h->type);
 	print("Base %#x ", h->base);
 	print("Size %#x ", h->size);
-	print("chan %#p ", h->chan);
-	print("off %#x ", h->offset);
-	print("pte %#p ", h->pte);
 }
 
-Hpm *
-phmapget(Proc *p, uintptr_t addr)
+char *
+phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type)
 {
 	char *err;
 	uintptr_t ret;
 
+	*type = 0;
+	*pp = nil;
 	uint64_t key = addr & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
-	err = hmapget(&p->pages, key, (uint64_t*)&ret);
-	if (err)
+	err = hmapget(&p->ptes, key, (uint64_t*)&ret);
+	if (err) {
 		print("phmapget(%d): %s\n", p->pid, err);
-	return (Hpm*)ret;
+		return err;
+	}
+	*type = ret & 0xff;
+	if (ret > 256) {
+		*pp = (void *)(ret & ~0xff);
+	}
+		
+	return err;
 }
 
 char *
-phmapput(Proc *p, Hpm *h)
+phmapput(Proc *p, uint64_t addr, Hpm *h)
 {
 	char *err;
 
-	uint64_t key = h->base & ~0x1fffffULL;
+	uint64_t key = addr & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
-	err = hmapput(&p->pages, key, (uint64_t)h);
+	err = hmapput(&p->ptes, key, (uint64_t)h);
 	if (err)
 		print("phmapput(%d): %s\n", p->pid, err);
 	return err;
