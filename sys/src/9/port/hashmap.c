@@ -49,12 +49,13 @@ phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type)
 }
 
 char *
-phmapput(Proc *p, uint64_t addr, Hpm *h)
+phmapput(Proc *p, Hpm *h)
 {
 	char *err;
 	
 	uint64_t key = h->va & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
+	print("phmapput va %#p key %#p\n", h->va, key);
 	err = hmapput(&p->ptes, key, (uint64_t)h);
 	if (err)
 		print("phmapput(%d): %s\n", p->pid, err);

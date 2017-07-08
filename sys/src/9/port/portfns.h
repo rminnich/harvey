@@ -440,5 +440,5 @@ int alloc_cpu_buffers(void);
 void dumphpm(Hpm *h);
 char *phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type);
 
-char *phmapput(Proc *p, uint64_t addr, Hpm *h);
+char *phmapput(Proc *p, Hpm *h);
 void addpages(Proc *p, uint64_t addr, uint64_t size, int perms);

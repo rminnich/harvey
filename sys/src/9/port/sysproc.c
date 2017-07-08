@@ -282,16 +282,16 @@ l2be(int32_t l)
 // to the appropriate map. with the low order bits being the type.
 void addpages(Proc *p, uint64_t addr, uint64_t size, int perms)
 {
+	for(uintptr_t b = addr; b < addr + size; b += BIGPGSZ) {
 	Hpm *hpm = mallocz(sizeof(*hpm), 1);
 	char *err;
-	print("%s(%d): addpages: insert[%#x, %#p, %#x]\n", p->args, p->pid, addr, size, perms);
-	hpm->va = addr;
+	print("%s(%d): addpages: insert[%#p, %#p, %#x]\n", p->args, p->pid, b, size, perms);
+	hpm->va = b;
 	hpm->pgszi = 1;
 	hpm->maxperms = perms;
 	hpm->perms = 0;
-	for(uintptr_t b = addr; b < addr + size; b += BIGPGSZ) {
-		if ((err = phmapput(p, addr, hpm))) {
-			print("%s(%d): hmap insert[%#x] %#x]: %s", p->args, p->pid, addr, hpm, err);
+		if ((err = phmapput(p, hpm))) {
+			print("%s(%d): hmap insert[%#p] %#x]: %s", p->args, p->pid, b, hpm, err);
 		}
 	}
 	print("%s(%d): addpages: done\n", p->args, p->pid);
