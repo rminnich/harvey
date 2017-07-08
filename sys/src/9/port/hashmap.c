@@ -17,9 +17,12 @@
 void
 dumphpm(Hpm *h)
 {
-	print("Type %#x ", h->type);
-	print("Base %#x ", h->base);
-	print("Size %#x ", h->size);
+	print("Image %#P ", h->image);
+	print("PTE %#p ", h->Pte);
+	print("va %#x ", h->va);
+	print("szi %#x ", h->pgszi);
+	print("maxperms %#x ", h->maxperms);
+	print("perms %#x ", h->perms);
 }
 
 char *
@@ -49,8 +52,8 @@ char *
 phmapput(Proc *p, uint64_t addr, Hpm *h)
 {
 	char *err;
-
-	uint64_t key = addr & ~0x1fffffULL;
+	
+	uint64_t key = h->va & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
 	err = hmapput(&p->ptes, key, (uint64_t)h);
 	if (err)

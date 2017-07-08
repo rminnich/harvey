@@ -21,6 +21,7 @@ typedef struct Egrp	Egrp;
 typedef struct Evalue	Evalue;
 typedef struct Fastcall Fastcall;
 typedef struct Fgrp	Fgrp;
+typedef struct Hpm	Hpm;
 typedef struct Image	Image;
 typedef struct Kzio 	Kzio;
 typedef struct Ldseg	Ldseg;
@@ -68,7 +69,15 @@ typedef struct Watermark Watermark;
 typedef struct Zseg	Zseg;
 typedef int    Devgen(Chan*, char*, Dirtab*, int, int, Dir*);
 
-typedef Pte Hpm;
+struct Hpm {
+	Image	*image;		/* text in file attached to this segment */
+	Pte	*Pte;
+	uintptr_t va;
+	uintptr_t pgszi;
+	int maxperms;
+	int perms;
+};
+	
 
 #include <fcall.h>
 #include <hashmap.h>

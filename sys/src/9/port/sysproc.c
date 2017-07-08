@@ -280,12 +280,15 @@ l2be(int32_t l)
 
 // Add pages. There is one special case: if there is no PTE yet, we add a nil pointer
 // to the appropriate map. with the low order bits being the type.
-void addpages(Proc *p, uint64_t addr, uint64_t size, uint8_t type)
+void addpages(Proc *p, uint64_t addr, uint64_t size, int perms)
 {
-	Hpm *hpm;
+	Hpm *hpm = mallocz(sizeof(*hpm), 1);
 	char *err;
-	print("%s(%d): addpages: insert[%#x, %#p, %#x]\n", p->args, p->pid, addr, size, type);
-	hpm = (void *)(uintptr_t)type;
+	print("%s(%d): addpages: insert[%#x, %#p, %#x]\n", p->args, p->pid, addr, size, perms);
+	hpm->va = addr;
+	hpm->pgszi = 1;
+	hpm->maxperms = perms;
+	hpm->perms = 0;
 	for(uintptr_t b = addr; b < addr + size; b += BIGPGSZ) {
 		if ((err = phmapput(p, addr, hpm))) {
 			print("%s(%d): hmap insert[%#x] %#x]: %s", p->args, p->pid, addr, hpm, err);
