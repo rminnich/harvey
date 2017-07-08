@@ -56,7 +56,7 @@ fault(uintptr_t addr, uintptr_t pc, int ftype)
 	char *err;
 	err = phmapget(up, addr, &h, &type);
 	if (err) {
-		print("%d: did not find %#p\n", up->pid, addr);
+		panic("%d: did not find %#p\n", up ? up->pid : -1, addr);
 	} else 
 	print("fault: %d, addr %#p, found %#p, type %#x\n", up->pid, addr, h, type);
 	}

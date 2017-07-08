@@ -773,6 +773,7 @@ userinit(void)
 	 * try to sleep if there are no pages available, but that
 	 * shouldn't be the case here.
 	 */
+	addpages(p, USTKTOP-USTKSIZE, USTKSIZE, SG_STACK|SG_READ|SG_WRITE);
 	sno = 0;
 	s = newseg(SG_STACK|SG_READ|SG_WRITE, USTKTOP-USTKSIZE, USTKSIZE/ BIGPGSZ);
 	p->seg[sno++] = s;
@@ -785,6 +786,7 @@ userinit(void)
 	/*
 	 * Text
 	 */
+	addpages(p, UTZERO, BIGPGSZ, SG_TEXT | SG_READ);
 	s = newseg(SG_TEXT|SG_READ|SG_EXEC, UTZERO, 1);
 	s->flushme++;
 	p->seg[sno++] = s;
@@ -799,6 +801,7 @@ userinit(void)
 	/*
 	 * Data
 	 */
+	addpages(p, UTZERO + BIGPGSZ, BIGPGSZ, SG_DATA | SG_READ|SG_WRITE);
 	s = newseg(SG_DATA|SG_READ|SG_WRITE, UTZERO + BIGPGSZ, 1);
 	s->flushme++;
 	p->seg[sno++] = s;
