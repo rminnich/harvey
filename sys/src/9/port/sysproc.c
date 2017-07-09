@@ -442,7 +442,7 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		error("exeac: no free segment slots");
 	sno = i;
 	up->seg[sno] = newseg(SG_STACK|SG_READ|SG_WRITE, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ);
-	addpages(up, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ, SG_STACK|SG_READ|SG_WRITE);
+	addpages(up, TSTKTOP-USTKSIZE, USTKSIZE, SG_STACK|SG_READ|SG_WRITE);
 	up->seg[sno]->color = up->color;
 
 	/*
