@@ -14,6 +14,7 @@
 #include "fns.h"
 #include "../port/error.h"
 
+static RWlock l;
 void
 dumphpm(Hpm *h)
 {
@@ -35,7 +36,9 @@ phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type)
 	*pp = nil;
 	uint64_t key = addr & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
+	rlock(&l);
 	err = hmapget(&p->ptes, key, (uint64_t*)&ret);
+	runlock(&l);
 	if (err) {
 		print("phmapget(%d): %s\n", p->pid, err);
 		return err;
@@ -56,7 +59,9 @@ phmapput(Proc *p, Hpm *h)
 	uint64_t key = h->va & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
 	print("phmapput va %#p key %#p\n", h->va, key);
+	wlock(&l);
 	err = hmapput(&p->ptes, key, (uint64_t)h);
+	wunlock(&l);
 	if (err)
 		print("phmapput(%d): %s\n", p->pid, err);
 	return err;
