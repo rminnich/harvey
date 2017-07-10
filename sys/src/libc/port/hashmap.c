@@ -88,6 +88,22 @@ hmapget1(Hashtable *cur, uint64_t key, Hashentry **hep)
 }
 
 static char *
+hmapapply1(Hashtable *cur, applyfunc f, void *arg)
+{
+	char *err;
+	size_t cap = cur->cap;
+	for(size_t i = 0; i < cap; i++) {
+		Hashentry *he = cur->tab + i;
+		if (isfree(he))
+			continue;
+		err = f(he, arg);
+		if (err != nil)
+			return err;
+	}
+	return nil;
+}
+
+static char *
 hmapresize(Hashmap *map, int isgrow)
 {
 	Hashtable *cur = map->cur;
@@ -175,6 +191,12 @@ hmapput(Hashmap *map, uint64_t key, uint64_t val)
 		if((err = hmapresize(map, 1)) != 0)
 			return err;
 	return hmapput1(map->cur, makekey(key), val);
+}
+
+char *
+hmapapply(Hashmap *h, applyfunc f, void *arg)
+{
+	return hmapapply1(h->cur, f, arg);
 }
 
 char *

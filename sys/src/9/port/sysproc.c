@@ -280,20 +280,21 @@ l2be(int32_t l)
 
 // Add pages. There is one special case: if there is no PTE yet, we add a nil pointer
 // to the appropriate map. with the low order bits being the type.
-void addpages(Proc *p, uint64_t addr, uint64_t size, int perms)
+void addpages(Proc *p, uint64_t addr, uint64_t size, int perms, int replace)
 {
 	for(uintptr_t b = addr; b < addr + size; b += BIGPGSZ) {
-	Hpm *hpm = mallocz(sizeof(*hpm), 1);
-	char *err;
-	print("%s(%d): addpages: insert[%#p, %#p, %#x]\n", p->args, p->pid, b, size, perms);
-	hpm->va = b;
-	hpm->pgszi = 1;
-	hpm->maxperms = perms;
-	hpm->perms = 0;
-		if ((err = phmapput(p, hpm))) {
-			print("%s(%d): hmap insert[%#p] %#x]: %s", p->args, p->pid, b, hpm, err);
+		Hpm *hpm = mallocz(sizeof(*hpm), 1);
+		char *err;
+		print("%s(%d): addpages: insert[%#p, %#p, %#x, %d]\n", p->args, p->pid, b, size, perms, replace);
+		hpm->va = b;
+		hpm->pgszi = 1;
+		hpm->maxperms = perms;
+		hpm->perms = 0;
+		if ((err = phmapput(p, hpm, replace))) {
+			panic("%s(%d): hmap insert[%#p] %#x]: %s", p->args, p->pid, b, hpm, err);
 		}
 	}
+
 	print("%s(%d): addpages: done\n", p->args, p->pid);
 }
 
@@ -442,7 +443,7 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 		error("exeac: no free segment slots");
 	sno = i;
 	up->seg[sno] = newseg(SG_STACK|SG_READ|SG_WRITE, TSTKTOP-USTKSIZE, USTKSIZE/BIGPGSZ);
-	addpages(up, TSTKTOP-USTKSIZE, USTKSIZE, SG_STACK|SG_READ|SG_WRITE);
+	addpages(up, TSTKTOP-USTKSIZE, USTKSIZE, SG_STACK|SG_READ|SG_WRITE, 1);
 	up->seg[sno]->color = up->color;
 
 	/*
@@ -603,6 +604,8 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 				ldseg[i].pg0vaddr,
 				(ldseg[i].pg0off+ldseg[i].memsz+BIGPGSZ-1)/BIGPGSZ
 			);
+			// TODO: fill this in.	
+			addpages(up, ldseg[i].pg0vaddr, (ldseg[i].pg0off+ldseg[i].memsz+BIGPGSZ-1), ldseg[i].type, 1);
 			s = img->s;
 			s->flushme = 1;
 			if(img->color != up->color)
@@ -610,6 +613,7 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 			unlock(&img->r.l);
 		} else {
 			s = newseg(ldseg[i].type, ldseg[i].pg0vaddr, (ldseg[i].pg0off+ldseg[i].memsz+BIGPGSZ-1)/BIGPGSZ);
+			addpages(up, ldseg[i].pg0vaddr, (ldseg[i].pg0off+ldseg[i].memsz+BIGPGSZ-1), ldseg[i].type, 1);
 			s->color = up->color;
 			incref(&img->r);
 			s->image = img;
@@ -623,6 +627,7 @@ execac(Ar0* ar0, int flags, char *ufile, char **argv)
 
 	/* BSS. Zero fill on demand for TS */
 	s = newseg(SG_BSS|SG_READ|SG_WRITE, (datalim + BIGPGSZ-1) & ~(BIGPGSZ-1), 0);
+	addpages(up, (datalim + BIGPGSZ-1) & ~(BIGPGSZ-1), BIGPGSZ, SG_BSS|SG_READ|SG_WRITE, 1);
 	up->seg[sno++] = s;
 	s->color= up->color;
 

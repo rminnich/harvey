@@ -35,7 +35,9 @@ phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type)
 	*pp = nil;
 	uint64_t key = addr & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
+	rlock(&p->hml);
 	err = hmapget(&p->ptes, key, (uint64_t*)&ret);
+	runlock(&p->hml);
 	if (err) {
 		print("phmapget(%d): %s\n", p->pid, err);
 		return err;
@@ -49,14 +51,19 @@ phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type)
 }
 
 char *
-phmapput(Proc *p, Hpm *h)
+phmapput(Proc *p, Hpm *h, int replace)
 {
 	char *err;
 	
 	uint64_t key = h->va & ~0x1fffffULL;
 	// TODO: look up using all page sizes.
 	print("phmapput va %#p key %#p\n", h->va, key);
+	wlock(&p->hml);
+	if (replace) {
+		hmapdel(&p->ptes, key, (uint64_t*)&h);
+	}
 	err = hmapput(&p->ptes, key, (uint64_t)h);
+	wunlock(&p->hml);
 	if (err)
 		print("phmapput(%d): %s\n", p->pid, err);
 	return err;

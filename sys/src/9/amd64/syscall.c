@@ -239,7 +239,7 @@ noerrorsleft(void)
 	}
 }
 
-int printallsyscalls;
+int printallsyscalls = 1;
 
 void
 syscall(unsigned int scallnr, Ureg *ureg)

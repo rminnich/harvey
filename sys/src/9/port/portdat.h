@@ -977,6 +977,7 @@ struct Proc
 
 	/* kill segements. Die. Die. Die. */
 	Hashmap ptes;
+	RWlock hml;
 };
 
 struct Procalloc
