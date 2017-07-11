@@ -22,9 +22,17 @@
 #define DBG if(0)print
 
 
+static char *copyhpm(Hashentry *h, void *arg)
+{
+	Proc *p = arg;
+	print("Proc %p(%d): copy (%#lx, %#lx)", p, p->pid, h->key, h->val);
+	return hmapput(&p->ptes, h->key, h->val);
+}
+
 void
 sysrfork(Ar0* ar0, ...)
 {
+	char *err;
 	Proc *up = externup();
 	Proc *p;
 	int flag, i, n, pid;
@@ -153,6 +161,11 @@ sysrfork(Ar0* ar0, ...)
 		if(up->seg[i])
 			p->seg[i] = dupseg(up->seg, i, n);
 	qunlock(&p->seglock);
+
+
+	err = hmapapply(&up->ptes, copyhpm, (void *)p);
+	if (err != nil)
+		panic(err);
 	poperror();
 
 	/* File descriptors */
