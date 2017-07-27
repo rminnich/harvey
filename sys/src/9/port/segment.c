@@ -125,7 +125,7 @@ putseg(Segment *s)
 	emap = &s->map[s->mapsize];
 	for(pp = s->map; pp < emap; pp++)
 		if(*pp)
-			freepte(s, *pp);
+			if (0)segfreepte(s, *pp);
 
 	qunlock(&s->lk);
 	if(s->map != s->ssegmap)
@@ -213,7 +213,7 @@ dupseg(Segment **seg, int segno, int share)
 	size = s->mapsize;
 	for(i = 0; i < size; i++)
 		if((pte = s->map[i]) != nil)
-			n->map[i] = ptecpy(n, pte);
+			n->map[i] = ptecpy(pte, n->ptepertab);
 
 	n->flushme = s->flushme;
 	if(s->r.ref > 1)
@@ -252,7 +252,7 @@ segpage(Segment *s, Page *p)
 	soff = p->va - s->base;
 	pte = &s->map[soff/PTEMAPMEM];
 	if(*pte == 0)
-		*pte = ptealloc(s);
+		*pte = ptealloc(s->ptepertab);
 	pgsz = sys->pgsz[s->pgszi];
 	pg = &(*pte)->pages[(soff&(PTEMAPMEM-1))/pgsz];
 	*pg = p;

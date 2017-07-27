@@ -25,8 +25,11 @@
 static char *copyhpm(Hashentry *h, void *arg)
 {
 	Proc *p = arg;
+	Pte *old, *new;
 	print("Proc %p(%d): copy (%#lx, %#lx)", p, p->pid, h->key, h->val);
-	return hmapput(&p->ptes, h->key, h->val);
+	old = (void *)h->val;
+	new = ptecpy(old, PTEMAPMEM/BIGPGSZ);
+	return hmapput(&p->ptes, h->key, (uint64_t) new);
 }
 
 void

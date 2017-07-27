@@ -636,12 +636,12 @@ pagereclaim(Image *i)
 }
 
 Pte*
-ptecpy(Segment *s, Pte *old)
+ptecpy(Pte *old, int ptepertab)
 {
 	Pte *new;
 	Page **src, **dst;
 
-	new = ptealloc(s);
+	new = ptealloc(ptepertab);
 	dst = &new->pages[old->first-old->pages];
 	new->first = dst;
 	for(src = old->first; src <= old->last; src++, dst++)
@@ -661,24 +661,44 @@ ptecpy(Segment *s, Pte *old)
 }
 
 Pte*
-ptealloc(Segment *s)
+ptealloc(int ptepertab)
 {
 	Pte *new;
 
-	new = smalloc(sizeof(Pte) + sizeof(Page*)*s->ptepertab);
-	new->first = &new->pages[s->ptepertab];
+	new = smalloc(sizeof(Pte) + sizeof(Page*)*ptepertab);
+	new->first = &new->pages[ptepertab];
 	new->last = new->pages;
 	return new;
 }
 
+// this freepte function is only for "normal" PTEs for now.
+// We'll need to add a free function to the HPM for later.
 void
-freepte(Segment *s, Pte *p)
+freepte(Pte *p, int type)
+{
+	Page **pg;
+
+	switch(type&SG_TYPE) {
+	case SG_PHYSICAL:
+		panic("freepte: SG_PHYSICAL is not implemented");
+	default:
+		for(pg = p->first; pg <= p->last; pg++)
+			if(*pg) {
+				putpage(*pg);
+				*pg = 0;
+			}
+	}
+	free(p);
+}
+void
+segfreepte(Segment *s, Pte *p)
 {
 	int ref;
 	void (*fn)(Page*);
 	Page *pt, **pg, **ptop;
+	int type = s->type&SG_TYPE;
 
-	switch(s->type&SG_TYPE) {
+	switch(type) {
 	case SG_PHYSICAL:
 		fn = s->pseg->pgfree;
 		ptop = &p->pages[s->ptepertab];
@@ -703,11 +723,7 @@ freepte(Segment *s, Pte *p)
 		}
 		break;
 	default:
-		for(pg = p->first; pg <= p->last; pg++)
-			if(*pg) {
-				putpage(*pg);
-				*pg = 0;
-			}
+		freepte(p, type);
 	}
 	free(p);
 }

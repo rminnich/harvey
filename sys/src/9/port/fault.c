@@ -146,7 +146,7 @@ fixfault(Segment *s, uintptr_t addr, int ftype, int dommuput, int color)
 	soff = addr-s->base;
 	p = &s->map[soff/PTEMAPMEM];
 	if(*p == 0)
-		*p = ptealloc(s);
+		*p = ptealloc(s->ptepertab);
 
 	etp = *p;
 	pg = &etp->pages[(soff&(PTEMAPMEM-1))/pgsz];
