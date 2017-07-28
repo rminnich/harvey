@@ -69,3 +69,36 @@ phmapput(Proc *p, Hpm *h, int replace)
 		print("phmapput(%d): %s\n", p->pid, err);
 	return err;
 }
+
+static char *freehpm(Hashentry *h, void *arg)
+{
+	Proc *p = arg;
+	char *err;
+	Hpm *hp;
+	print("Proc %p(%d): copy (%#lx, %#lx)", p, p->pid, h->key, h->val);
+	err = hmapdel(&p->ptes, h->key, (uint64_t*)&hp);
+	if (err != nil)
+		return err;
+	freepte(hp->Pte, hp->type);
+	return err;
+}
+
+
+void
+phmapfree(Proc *p)
+{
+	Proc *up = externup();
+	char *err;
+	err = hmapapply(&up->ptes, freehpm, (void *)p);
+	if (err != nil)
+		panic(err);
+
+}
+
+void phpmexit(Proc *p)
+{
+	int len = hmaplen(&p->ptes);
+	if (len > 0)
+		panic("Pid %d: hmaplen is %d, not 0", p->pid, len);
+	hmapfree(&p->ptes);
+}

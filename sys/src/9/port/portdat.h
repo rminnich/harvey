@@ -76,6 +76,7 @@ struct Hpm {
 	uintptr_t pgszi;
 	int maxperms;
 	int perms;
+	int type;
 };
 	
 

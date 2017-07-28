@@ -443,3 +443,5 @@ char *phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type);
 
 char *phmapput(Proc *p, Hpm *h, int replace);
 void addpages(Proc *p, uint64_t addr, uint64_t size, int perms, int replace);
+void phmapfree(Proc *p);
+void phpmexit(Proc *p);
