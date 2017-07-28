@@ -36,6 +36,9 @@ extern Proc* psalloc(void);
 extern void pshash(Proc*);
 extern void psrelease(Proc*);
 extern void psunhash(Proc*);
+extern void phmapfree(Proc *p);
+extern void phpmexit(Proc *p);
+
 
 static int reprioritize(Proc*);
 static void updatecpu(Proc*);
@@ -1357,6 +1360,9 @@ pexit(char *exitstr, int freemem)
 		}
 	}
 	qunlock(&up->seglock);
+
+	phmapfree(up);
+	phmapexit(up);
 
 	lock(&up->exl);		/* Prevent my children from leaving waits */
 	psunhash(up);

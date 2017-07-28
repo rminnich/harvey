@@ -95,7 +95,7 @@ phmapfree(Proc *p)
 
 }
 
-void phpmexit(Proc *p)
+void phmapexit(Proc *p)
 {
 	int len = hmaplen(&p->ptes);
 	if (len > 0)
