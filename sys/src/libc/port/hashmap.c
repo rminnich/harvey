@@ -161,7 +161,8 @@ hmapdel(Hashmap *map, uint64_t key, uint64_t *valp)
 	char *err;
 	if((err = hmapget1(cur, key, &he)) != 0)
 		return err;
-	*valp = he->val;
+	if (valp)
+		*valp = he->val;
 	setfree(he);
 	cur->len--;
 	if(cur->cap > MinCap && cur->len < cur->cap/4)
@@ -217,4 +218,10 @@ hmapstats(Hashmap *map, size_t *chains, size_t nchains)
 		}
 	}
 	return nil;
+}
+
+int
+hmaplen(Hashmap *map)
+{
+	return map->cur->len;
 }

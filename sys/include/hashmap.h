@@ -28,3 +28,4 @@ char * hmapget(Hashmap *ht, uint64_t key, uint64_t *valp);
 char * hmapput(Hashmap *ht, uint64_t key, uint64_t val);
 char * hmapapply(Hashmap *ht, applyfunc f, void *arg);
 char * hmapstats(Hashmap *ht, size_t *lens, size_t nlens);
+int hmaplen(Hashmap *ht);
