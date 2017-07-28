@@ -25,11 +25,24 @@
 static char *copyhpm(Hashentry *h, void *arg)
 {
 	Proc *p = arg;
-	Pte *old, *new;
-	print("Proc %p(%d): copy (%#lx, %#lx)", p, p->pid, h->key, h->val);
-	old = (void *)h->val;
-	new = ptecpy(old, PTEMAPMEM/BIGPGSZ);
-	return hmapput(&p->ptes, h->key, (uint64_t) new);
+	Hpm *old = (void *)h->val;
+	Hpm *hpm = mallocz(sizeof(*hpm), 1);
+	char *err;
+
+	print("he is %p; hpm is %p\n", h, old);
+	dumphpm(old);
+	print("%s(%d): copyhpm: insert[%#p, %#p, %#x, %d]\n", p->args, p->pid, old->va, old->pgszi, old->maxperms, 0);
+	*hpm = *old;
+	if (old->Pte)
+		hpm->Pte = ptecpy(old->Pte, PTEMAPMEM/BIGPGSZ);
+	if (old->image)
+		incref(&old->image->r);
+	print("Now insert: ");
+	dumphpm(hpm);
+	if ((err = phmapput(p, hpm, 0))) {
+		panic("panic: %s(%d): hmap insert[%#p] %#p]: %s", p->args, p->pid, hpm, hpm->va, err); 
+	}
+	return nil;
 }
 
 void

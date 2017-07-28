@@ -19,7 +19,7 @@ dumphpm(Hpm *h)
 {
 	print("Image %#P ", h->image);
 	print("PTE %#p ", h->Pte);
-	print("va %#x ", h->va);
+	print("va %#p ", h->va);
 	print("szi %#x ", h->pgszi);
 	print("maxperms %#x ", h->maxperms);
 	print("perms %#x ", h->perms);
@@ -60,6 +60,7 @@ phmapput(Proc *p, Hpm *h, int replace)
 	print("phmapput va %#p key %#p\n", h->va, key);
 	wlock(&p->hml);
 	if (replace) {
+		print("(%d) put: try a replace\n", p->pid);
 		hmapdel(&p->ptes, key, (uint64_t*)&h);
 	}
 	err = hmapput(&p->ptes, key, (uint64_t)h);
