@@ -292,6 +292,15 @@ fixfault(Segment *s, uintptr_t addr, int ftype, int dommuput, int color)
 	}
 	qunlock(&s->lk);
 
+	if (1) {
+		uint64_t t;
+		Hpm *h;
+		char *err;
+
+		err = phmapget(up, addr, &h, &t);
+		if (err != nil)
+			panic("fixfault: %s(%d) can't find %p: %s\n", up->args, up->pid, addr, err);
+	}
 	if(dommuput){
 		assert(segppn(s, (*pg)->pa) == (*pg)->pa);
 		mmuput(addr, *pg, mmuattr);
