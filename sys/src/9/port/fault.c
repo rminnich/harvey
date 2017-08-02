@@ -300,6 +300,10 @@ fixfault(Segment *s, uintptr_t addr, int ftype, int dommuput, int color)
 		err = phmapget(up, addr, &h, &t);
 		if (err != nil)
 			panic("fixfault: %s(%d) can't find %p: %s\n", up->args, up->pid, addr, err);
+		if (p && *p && h && h->Pte)
+			print("Would compare %p and %p\n", *p, h->Pte);
+		if (0) if (! eqpte(*p, (Pte *)h->Pte))
+			panic("ptes not same");
 	}
 	if(dommuput){
 		assert(segppn(s, (*pg)->pa) == (*pg)->pa);

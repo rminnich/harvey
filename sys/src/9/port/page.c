@@ -727,3 +727,17 @@ segfreepte(Segment *s, Pte *p)
 	}
 	free(p);
 }
+
+// TODO: check pages
+int
+eqpte(Pte *p1, Pte *p2)
+{
+	int ok = 0;
+	if ((p1->type == p2->type) &&
+	    (p1->base == p2->base) &&
+	    (p1->size == p2->size) &&
+	    (p1->first == p2->first) &&
+	    (p1->last == p2->last))
+		ok++;
+	return ok;
+}

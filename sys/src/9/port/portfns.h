@@ -118,6 +118,7 @@ int		encrypt(void*, void*, int);
 void		envcpy(Egrp*, Egrp*);
 int		eqchanddq(Chan*, int, uint, Qid, int);
 int		eqqid(Qid, Qid);
+int             eqpte(Pte*, Pte*);
 void		error(char*);
 void		exhausted(char*);
 void		exit(int);
@@ -442,6 +443,6 @@ void dumphpm(Hpm *h);
 char *phmapget(Proc *p, uintptr_t addr, Hpm **pp, uint64_t *type);
 
 char *phmapput(Proc *p, Hpm *h, int replace);
-void addpages(Proc *p, uint64_t addr, uint64_t size, int perms, int replace);
+void addpages(Proc *p, Image *, uint64_t addr, uint64_t size, int perms, int replace);
 void phmapfree(Proc *p);
 void phmapexit(Proc *p);

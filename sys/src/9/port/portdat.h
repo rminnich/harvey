@@ -70,7 +70,6 @@ typedef struct Zseg	Zseg;
 typedef int    Devgen(Chan*, char*, Dirtab*, int, int, Dir*);
 
 struct Hpm {
-	Image	*image;		/* text in file attached to this segment */
 	Pte	*Pte;
 	uintptr_t va;
 	uintptr_t pgszi;
@@ -438,6 +437,8 @@ struct Pte
 	uintptr_t type;
 	uintptr_t base;
 	uintptr_t size;
+
+	Image	*image;		/* text in file attached to this Pte */
 
 	Page	**first;		/* First used entry */
 	Page	**last;		/* Last used entry */
