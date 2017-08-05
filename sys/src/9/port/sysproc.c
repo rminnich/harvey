@@ -35,8 +35,6 @@ static char *copyhpm(Hashentry *h, void *arg)
 	*hpm = *old;
 	if (old->Pte)
 		hpm->Pte = ptecpy(old->Pte, PTEMAPMEM/BIGPGSZ);
-	if (old->image)
-		incref(&old->image->r);
 	print("Now insert: ");
 	dumphpm(hpm);
 	if ((err = phmapput(p, hpm, 0))) {
@@ -314,9 +312,6 @@ void addpages(Proc *p, Image *i, uint64_t addr, uint64_t size, int perms, int re
 		Hpm *hpm = mallocz(sizeof(*hpm), 1);
 		char *err;
 		print("%s(%d): addpages: insert[%#p, %#p, %#x, %d]\n", p->args, p->pid, b, size, perms, replace);
-		hpm->image = i;
-		if (i)
-			incref(&i->r);
 		hpm->va = b;
 		hpm->pgszi = 1;
 		hpm->maxperms = perms;

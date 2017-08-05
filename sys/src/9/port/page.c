@@ -656,7 +656,9 @@ ptecpy(Pte *old, int ptepertab)
 			new->last = dst;
 			*dst = *src;
 		}
-
+	new->image = old->image;
+	if (new->image)
+		incref(&new->image->r);
 	return new;
 }
 

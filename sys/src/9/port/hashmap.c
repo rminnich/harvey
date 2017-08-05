@@ -17,8 +17,9 @@
 void
 dumphpm(Hpm *h)
 {
-	print("Image %#P ", h->image);
 	print("PTE %#p ", h->Pte);
+	if (h->Pte)
+		print("Image %#P ", h->Pte->image);
 	print("va %#p ", h->va);
 	print("szi %#x ", h->pgszi);
 	print("maxperms %#x ", h->maxperms);
