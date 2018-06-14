@@ -1,8 +1,8 @@
 .TH INTRO 5 
 .SH NAME
-intro \- introduction New File Protocol, NP
+intro \- introduction New File Protocol, N9P
 .SH SYNOPSIS
-.B #include <fcall.h>
+.B #include <nfcall.h>
 .SH DESCRIPTION
 A Plan 9
 .I server
@@ -45,7 +45,8 @@ and responses transmitted on the connection to the appropriate service.
 .PP
 The
 .IR "New Plan 9 File Protocol" ,
-NP, is used for messages between
+.I N9P
+, is used for messages between
 .I clients
 and
 .IR servers .
@@ -81,17 +82,17 @@ Text strings are represented this way,
 with the text itself stored as a UTF-8
 encoded sequence of Unicode characters (see
 .IR utf (6)).
-Text strings in NP messages are not
+Text strings in N9P messages are not
 .SM NUL\c
 -terminated:
 .I n
 counts the bytes of UTF-8 data, which include no final zero byte.
 The
 .SM NUL
-character is illegal in all text strings in NP, and is therefore
+character is illegal in all text strings in N9P, and is therefore
 excluded from file names, user names, and so on.
 .PP
-Each NP message begins with a four-byte size field
+Each N9P message begins with a four-byte size field
 specifying the length in bytes of the complete message including
 the four bytes of the size field itself.
 The next byte is the message type, one of the constants
@@ -345,7 +346,7 @@ messages and subsequently manipulated using
 .B read
 and
 .B write
-messages to exchange authentication information not defined explicitly by NP.
+messages to exchange authentication information not defined explicitly by N9P.
 Once the authentication protocol is complete, the
 .B afid
 is presented in the
@@ -443,11 +444,11 @@ The exception is that a long error string in an
 message should be truncated if necessary, since the string is only
 advisory and in some sense arbitrary.
 .PP
-Most programs do not see the NP protocol directly; instead calls to library
+Most programs do not see the N9P protocol directly; instead calls to library
 routines that access files are
 translated by the mount driver,
 .IR mnt (3),
-into NP messages.
+into N9P messages.
 .SH DIRECTORIES
 Directories are created by
 .B create
