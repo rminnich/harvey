@@ -253,10 +253,7 @@ wrmsr:
 
 .global invlpg
 invlpg:
-#	MOVQ	%rdi, va+0(FP)
-
-#	INVLPG	va+0(FP)
-
+	invlpg 0(%rdi)
 	RET
 
 .global wbinvd
