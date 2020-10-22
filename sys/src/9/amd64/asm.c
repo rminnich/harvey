@@ -22,8 +22,8 @@
 // Sorry.
 #include "acpi.h"
 
-#undef DBG
-#define DBG print
+//#undef DBG
+//#define DBG print
 /*
  * Address Space Map.
  * Low duty cycle.
