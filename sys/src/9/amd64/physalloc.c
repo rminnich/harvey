@@ -20,8 +20,8 @@
 #include "fns.h"
 #include "acpi.h"
 
-#undef DBG
-#define DBG print
+//#undef DBG
+//#define DBG print
 
 #define ISPOWEROF2(x)	(((x) != 0) && !((x) & ((x)-1)))
 #define UNO		((uintmem)1)
@@ -74,6 +74,7 @@ static Bal bal[Ndoms];
 static int ndoms;
 static Lock budlock;
 
+#if 0
 static void
 dump(Bal *b)
 {
@@ -97,6 +98,7 @@ dump(Bal *b)
 		print("\n");
 	}
 }
+#endif
 
 char*
 seprintphysstats(char *s,  char *e)
@@ -303,7 +305,6 @@ xphysalloc(Bal *b, uint64_t size, void *tag)
 	Buddy *avail, *blocks;
 	uintmem m;
 
-	print("FUCK\n");
 	DBG("physalloc\n");
 	assert(b->size > 0);
 
@@ -386,7 +387,7 @@ physalloc(uint64_t size, int *colorp, void *tag)
 	m = 0;
 
 	color = *colorp;
-	print("ndoms is %d\n", ndoms);
+	DBG("ndoms is %d\n", ndoms);
 	if(color >= 0){
 		color %= ndoms;
 		if(bal[color].kmin > 0){
@@ -396,8 +397,9 @@ physalloc(uint64_t size, int *colorp, void *tag)
 	}
 	if(m == 0)
 		for(i = 0; i < ndoms; i++) {
-			dump(&bal[i]);
-			print("dom %d bal[%d].kmin %#x\n", i, i, bal[i].kmin);
+			// TODO: make this easily turned on/off
+			//dump(&bal[i]);
+			DBG("dom %d bal[%d].kmin %#x\n", i, i, bal[i].kmin);
 			if(bal[i].kmin > 0)
 				if((m = xphysalloc(&bal[i], size, tag)) != 0){
 					*colorp = i;
