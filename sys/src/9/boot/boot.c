@@ -126,6 +126,7 @@ boot(int argc, char *argv[])
 	/*
 	 *  set up usb keyboard, mouse and disk, if any.
 	 */
+	if (0)
 	usbinit();
 	print("usbinit done\n");
 
@@ -142,11 +143,13 @@ boot(int argc, char *argv[])
 	/*
 	 *  load keymap if it is there.
 	 */
+	if (0)
 	kbmap();
 
 	/*
  	 *  authentication agent
 	 */
+	if (0)
 	authentication(cpuflag);
 
 	print("connect...");
@@ -295,6 +298,7 @@ static void catstuff(void)
 	// The reason to do this as a process is you
 	// can kill it any time if you're concerned about
 	// the overhead. It shows up as a child of init.
+	print("KID\n");
 	ifd = open("#t/eia0", ORDWR);
 	if (ifd < 0) {
 		print("can't open eia0!!!\n");
@@ -302,6 +306,7 @@ static void catstuff(void)
 		return;
 	}
 	print("open: ifd %d\n", ifd);
+	write(ifd, "FUCK\n", 5);
 	while (1) {
 		sleep(100000);
 	}
@@ -317,7 +322,7 @@ rootserver(char *arg)
 	int rc;
 	Method *mp;
 	char *cp;
-	char reply[256];
+	char reply[256] = {"rc"};
 	int n;
 
 	// Leave this on if you want uart input!
@@ -327,6 +332,7 @@ rootserver(char *arg)
 	rc = readfile("#e/nobootprompt", reply, sizeof(reply));
 	if(rc == 0 && reply[0]){
 		mp = findmethod(reply);
+		print("method %s is %p\n", reply, mp);
 		if(mp)
 			goto HaveMethod;
 		print("boot method %s not found\n", reply);
@@ -359,6 +365,7 @@ rootserver(char *arg)
 	}while(mp == nil);
 
 HaveMethod:
+	print("HAVE A METHOD?\n");
 	bargc = tokenize(reply, bargv, Nbarg-2);
 	bargv[bargc] = nil;
 	cp = strchr(reply, '!');

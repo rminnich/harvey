@@ -225,6 +225,7 @@ options(int argc, char* argv[])
 	}
 	vflag = dbgflg['v'];
 	nosmp = dbgflg['n'];
+	nosmp = 1;
 }
 
 void
