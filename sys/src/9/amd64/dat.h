@@ -481,5 +481,7 @@ extern char*rolename[];
 #define DBG(...)	do{if(DBGFLG)dbgprint(__VA_ARGS__);}while(0)
 
 extern char dbgflg[256];
+extern int showpost;
+extern int postserial;
 
 #define dbgprint	print		/* for now */

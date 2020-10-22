@@ -148,6 +148,7 @@ void	pcisetmwi(Pcidev*);
 int	pcisetpms(Pcidev*, int);
 void pcishowdev(Pcidev*);
 int	pickcore(int, int);
+void post(char *msg, uint64_t terminal);
 void	printcpufreq(void);
 void	putac(Mach*);
 void *rsdsearch(void *start, uintptr_t size);

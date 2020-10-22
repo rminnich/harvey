@@ -62,7 +62,8 @@ static int vflag;
 
 int nosmp;
 int acpionly = 1;
-static int showpost = 0;
+int showpost = 0;
+int postserial = 0;
 
 // Harvey is out of date on many platforms, and frequently the only
 // indication is a brick.
@@ -77,16 +78,41 @@ static int showpost = 0;
 // Don't fall into the trap of using macros for this capability; the Plan 9 rule is that
 // code always compiles, and macros usually break that rule. The cost in space
 // and time of this bit of extra code is so small as to not matter.
-void post(char *msg, uint8_t terminal)
+static void
+out3f8(uint8_t c)
 {
+	for(int i = 0; (i < 128) && (inb(0x3fd)&0x60); i++)
+		;
+	outb(0x3f8, c);
+}
+
+void
+post(char *msg, uint64_t terminal)
+{
+	char *hex = "0123456789abcdef";
 	if (! showpost)
 		return;
 	for(int i = 0; i < strlen(msg); i++) {
-		outb(0x3f8, msg[i]);
+		if (postserial)
+			out3f8(msg[i]);
 		outb(0x80, msg[i]);
 	}
-	outb(0x80, terminal);
+	if (postserial)
+		out3f8(' ');
+	for(int i = 56; i >= 0; i -= 8){
+		uint8_t val = (uint8_t)(terminal>>i);
+		outb(0x80, val);
+		if (postserial)  {
+			out3f8(hex[val>>4]);
+			out3f8(hex[val&0xf]);
+		}
+	}
+	if (postserial)  {
+		out3f8('\n');
+		out3f8('\r');
+	}
 }
+
 void*
 sigscan(uint8_t* address, int length, char* signature)
 {
@@ -567,7 +593,10 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 	active.nbooting = 0;
 
 	asminit(); post("	asminit();", postterminal++);
+	showpost = 0;
 	multiboot(mbmagic, mbaddress, 0); post("	multiboot(mbmagic, mbaddress, 0);", postterminal++);
+	showpost = 0;
+	postserial = 0;
 	options(oargc, oargv); post("	options(oargc, oargv);", postterminal++);
 
 	/*
@@ -592,7 +621,11 @@ main(uint32_t mbmagic, uint32_t mbaddress)
 
 	fmtinit(); post("	fmtinit();", postterminal++);
 	print("\nHarvey\n");
-	multiboot(mbmagic, mbaddress, postterminal++); post("	multiboot(mbmagic, mbaddress, 1);", 1);
+	if (showpost) {
+		void asmdump(void);
+		asmdump();
+	}
+	multiboot(mbmagic, mbaddress, 1); post("	multiboot(mbmagic, mbaddress, 1);", postterminal++);
 
 	if(vflag){
 		multiboot(mbmagic, mbaddress, vflag);
