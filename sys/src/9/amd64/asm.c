@@ -22,6 +22,8 @@
 // Sorry.
 #include "acpi.h"
 
+#undef DBG
+#define DBG print
 /*
  * Address Space Map.
  * Low duty cycle.
@@ -46,7 +48,7 @@ enum {
 };
 
 static Lock asmlock;
-static Asm asmarray[64] = {
+static Asm asmarray[256] = {
 	{ 0, ~0, AsmNONE, 0, },
 };
 static int asmindex = 1;
@@ -60,7 +62,7 @@ asmdump(void)
 
 	DBG("asm: index %d:\n", asmindex);
 	for(assem = asmlist; assem != nil; assem = assem->next){
-		DBG(" %#P %#P %d (%P)\n",
+		DBG(" %#P %#P %d (%#P)\n",
 			assem->addr, assem->addr+assem->size,
 			assem->type, assem->size);
 	}
@@ -97,6 +99,7 @@ asmnew(uintmem addr, uintmem size, int type)
 {
 	Asm * assem;
 
+	DBG("asmnew: %#lx %#lx %#x\n", addr, size, type);
 	if(asmfreelist != nil){
 		assem = asmfreelist;
 		asmfreelist = assem->next;
@@ -186,7 +189,12 @@ asmalloc(uintmem addr, uintmem size, int type, int align)
 
 	DBG("asmalloc: %#P@%#P, type %d\n", size, addr, type);
 	lock(&asmlock);
-	for(pp = nil, assem = asmlist; assem != nil; pp = assem, assem = assem->next){
+	// Bug: What if assem == asmlist (first time in loop)
+	// Then when set assem=>next = asmfreelist, you destroy
+	// the asmlist.
+	// The code in here is typically Plan 9 sketchy.
+	// As an experiment, set pp to asmlist?
+	for(pp = asmlist, assem = asmlist; assem != nil; pp = assem, assem = assem->next){
 		if(assem->type != type)
 			continue;
 		a = assem->addr;
@@ -225,7 +233,10 @@ asmalloc(uintmem addr, uintmem size, int type, int align)
 		if(assem->size == 0){
 			if(pp != nil)
 				pp->next = assem->next;
-			assem->next = asmfreelist;
+			if (assem == asmlist)
+				asmlist = assem->next;
+			else
+				assem->next = asmfreelist;
 			asmfreelist = assem;
 		}
 
@@ -242,10 +253,16 @@ asmalloc(uintmem addr, uintmem size, int type, int align)
 static void
 asminsert(uintmem addr, uintmem size, int type)
 {
-	if(type == AsmNONE || asmalloc(addr, size, AsmNONE, 0) == 0)
+	if(type == AsmNONE || asmalloc(addr, size, AsmNONE, 0) == 0) {
+		post("asminsert1", 0x11);
 		return;
-	if(asmfree(addr, size, type) == 0)
+	}
+	if(asmfree(addr, size, type) == 0) {
+		post("asminsert2", 0x12);
 		return;
+	}
+	post("asminsert addr", addr);
+	post("asminsert size", size);
 	asmfree(addr, size, 0);
 }
 
@@ -266,11 +283,16 @@ asminit(void)
 void
 asmmapinit(uintmem addr, uintmem size, int type)
 {
+	DBG("asmmapinit: addr %#lx size %#lx type %#lx:", addr, size, type);
+	post("asmmapinit addr", addr);
+	post("asmmapinit size", size);
+	post("asmmapinit type", type);
 	switch(type){
 	default:
 		asminsert(addr, size, type);
 		break;
 	case AsmMEMORY:
+		post("asmminit: memory", 0x80);
 		/*
 		 * Adjust things for the peculiarities of this
 		 * architecture.
@@ -279,8 +301,10 @@ asmmapinit(uintmem addr, uintmem size, int type)
 		 * and how much of it is occupied, might need to be known
 		 * for setting up allocators later.
 		 */
-		if(addr+size < sys->pmstart)
+		if(addr+size < sys->pmstart) {
+			post("asmmapinit addr + size < pmstart", sys->pmstart);
 			break;
+		}
 		if(addr < sys->pmstart){
 			size -= sys->pmstart - addr;
 			addr = sys->pmstart;
@@ -289,8 +313,11 @@ asmmapinit(uintmem addr, uintmem size, int type)
 		sys->pmoccupied += size;
 		if(addr+size > sys->pmend)
 			sys->pmend = addr+size;
+		post("asmmapinit3", 3);
 		break;
 	}
+	post("asmmapinit4: done", 4);
+	DBG("asmmapinit: done\n");
 }
 
 void
@@ -355,6 +382,8 @@ asmmeminit(void)
 	int cx;
 #endif /* ConfCrap */
 
+	DBG("asmeminit\n");
+	asmdump();
 	assert(!((sys->vmunmapped|sys->vmend) & sys->pgszmask[1]));
 
 	if((pa = mmuphysaddr(sys->vmunused)) == ~0)
@@ -365,17 +394,21 @@ asmmeminit(void)
 		panic("asmmeminit 2");
 	DBG("pa %#llx mem %#llx\n", pa, mem);
 
+	asmdump();
 	/* assume already 2MiB aligned*/
 	assert(ALIGNED(sys->vmunmapped, 2*MiB));
 	pml4 = UINT2PTR(machp()->MMU.pml4->va);
+	DBG("Map regions for asmmeminit\n");
 	while(sys->vmunmapped < sys->vmend){
 		l = mmuwalk(pml4, sys->vmunmapped, 1, &pte, asmwalkalloc);
-		DBG("%#p l %d\n", sys->vmunmapped, l);
+		DBG("->%#p l %d\n", sys->vmunmapped, l);
 		*pte = pa|PtePS|PteRW|PteP;
 		sys->vmunmapped += 2*MiB;
 		pa += 2*MiB;
 	}
+	DBG("Done\n");
 
+	asmdump();
 #ifdef ConfCrap
 	cx = 0;
 #endif /* ConfCrap */
@@ -388,13 +421,14 @@ asmmeminit(void)
 			continue;
 		}
 		va = KSEG2+assem->addr;
-		DBG("asm: addr %#P end %#P type %d size %P\n",
+		DBG("asm forth to the wilderness: addr %#P end %#P type %d size %P\n",
 			assem->addr, assem->addr+assem->size,
 			assem->type, assem->size);
 
 		lo = assem->addr;
 		hi = assem->addr+assem->size;
 		/* Convert a range into pages */
+		DBG(".... lo %#lx hi %#lx\n", lo, hi);
 		for(mem = lo; mem < hi; mem = nextmem){
 			nextmem = (mem + PGLSZ(0)) & ~sys->pgszmask[0];
 
@@ -440,12 +474,12 @@ asmmeminit(void)
 //  hi = 600*MiB;
 		conf.mem[cx].npage = (hi - lo)/PGSZ;
 		conf.npage += conf.mem[cx].npage;
-		DBG("cm %d: addr %#llx npage %lu\n",
+		DBG("conf.mem index %d: addr %#llx npage %lu\n",
 			cx, conf.mem[cx].base, conf.mem[cx].npage);
 		cx++;
 #endif /* ConfCrap */
 	}
-	DBG("%d %d %d\n", npg[0], npg[1], npg[2]);
+	DBG("npg[%d, %d, %d]\n", npg[0], npg[1], npg[2]);
 
 #ifdef ConfCrap
 	/*
@@ -459,6 +493,7 @@ asmmeminit(void)
 		conf.npage, conf.upages, i);
 
 #endif /* ConfCrap */
+	DBG("DONE asmeminit DONE\n");
 }
 
 void
@@ -468,6 +503,7 @@ asmumeminit(void)
 	extern void physallocdump(void);
 
 	for(assem = asmlist; assem != nil; assem = assem->next){
+		DBG("asmumeminit: assem %p, %#lx, %#lx %#x\n", assem->addr, assem->size, assem->type);
 		if(assem->type != AsmMEMORY)
 			continue;
 		physinit(assem->addr, assem->size);

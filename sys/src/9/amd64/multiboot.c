@@ -106,9 +106,15 @@ multiboot(uint32_t magic, uint32_t pmbi, int vflag)
 	if(mbi->flags & Fmmap){
 		mmap = KADDR(mbi->mmapaddr);
 		n = 0;
+		post("Fmmap len", mbi->mmaplength);
 		while(n < mbi->mmaplength){
 			addr = (((uint64_t)mmap->base[1])<<32)|mmap->base[0];
 			len = (((uint64_t)mmap->length[1])<<32)|mmap->length[0];
+			postserial = 1;
+			post("Fmmap addr", addr);
+			post("Fmmap len", len);
+			post("Fmmap type", mmap->type);
+			postserial = 0;
 			switch(mmap->type){
 			default:
 				if(vflag)
@@ -156,6 +162,8 @@ multiboot(uint32_t magic, uint32_t pmbi, int vflag)
 
 			n += mmap->size+sizeof(mmap->size);
 			mmap = KADDR(mbi->mmapaddr+n);
+			post("mmapsize", mmap->size);
+			post("n", n);
 		}
 	}
 	if(vflag && (mbi->flags & Fbootloadername)){

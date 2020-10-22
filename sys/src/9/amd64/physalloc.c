@@ -20,6 +20,9 @@
 #include "fns.h"
 #include "acpi.h"
 
+#undef DBG
+#define DBG print
+
 #define ISPOWEROF2(x)	(((x) != 0) && !((x) & ((x)-1)))
 #define UNO		((uintmem)1)
 
@@ -70,6 +73,30 @@ struct Bal {
 static Bal bal[Ndoms];
 static int ndoms;
 static Lock budlock;
+
+static void
+dump(Bal *b)
+{
+	uint bi, i, k;
+	Buddy *blocks;
+
+	blocks = b->blocks;
+	for(i = 0; i < (UNO<<(b->kmax-b->kmin+1)); i++){
+		if(blocks[i].tag == Used)
+			continue;
+		print("blocks[%d]: size %d prev %d next %d\n",
+			i, 1<<b->blocks[i].kval, blocks[i].prev, blocks[i].next);
+		//i += (1<<blocks[i].kval)/b->bminsz-1;
+	}
+
+	for(k = 0; k <= b->kmax; k++){
+		print("a[%d]:", k);
+		for(bi = b->avail[k].next; bi != 0; bi = blocks[BLOCK(b,bi)].next){
+			print(" %d", bi);
+		}
+		print("\n");
+	}
+}
 
 char*
 seprintphysstats(char *s,  char *e)
@@ -276,6 +303,7 @@ xphysalloc(Bal *b, uint64_t size, void *tag)
 	Buddy *avail, *blocks;
 	uintmem m;
 
+	print("FUCK\n");
 	DBG("physalloc\n");
 	assert(b->size > 0);
 
@@ -358,6 +386,7 @@ physalloc(uint64_t size, int *colorp, void *tag)
 	m = 0;
 
 	color = *colorp;
+	print("ndoms is %d\n", ndoms);
 	if(color >= 0){
 		color %= ndoms;
 		if(bal[color].kmin > 0){
@@ -366,40 +395,17 @@ physalloc(uint64_t size, int *colorp, void *tag)
 		}
 	}
 	if(m == 0)
-		for(i = 0; i < ndoms; i++)
+		for(i = 0; i < ndoms; i++) {
+			dump(&bal[i]);
+			print("dom %d bal[%d].kmin %#x\n", i, i, bal[i].kmin);
 			if(bal[i].kmin > 0)
 				if((m = xphysalloc(&bal[i], size, tag)) != 0){
 					*colorp = i;
 					return m;
 				}
+		}
 	return m;
 }
-
-#if 0
-static void
-dump(Bal *b)
-{
-	uint bi, i, k;
-	Buddy *blocks;
-
-	blocks = b->blocks;
-	for(i = 0; i < (UNO<<(b->kmax-b->kmin+1)); i++){
-		if(blocks[i].tag == Used)
-			continue;
-		print("blocks[%d]: size %d prev %d next %d\n",
-			i, 1<<b->blocks[i].kval, blocks[i].prev, blocks[i].next);
-		//i += (1<<blocks[i].kval)/b->bminsz-1;
-	}
-
-	for(k = 0; k <= b->kmax; k++){
-		print("a[%d]:", k);
-		for(bi = b->avail[k].next; bi != 0; bi = blocks[BLOCK(b,bi)].next){
-			print(" %d", bi);
-		}
-		print("\n");
-	}
-}
-#endif
 
 void
 physallocdump(void)
