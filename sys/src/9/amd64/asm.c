@@ -189,12 +189,7 @@ asmalloc(uintmem addr, uintmem size, int type, int align)
 
 	DBG("asmalloc: %#P@%#P, type %d\n", size, addr, type);
 	lock(&asmlock);
-	// Bug: What if assem == asmlist (first time in loop)
-	// Then when set assem=>next = asmfreelist, you destroy
-	// the asmlist.
-	// The code in here is typically Plan 9 sketchy.
-	// As an experiment, set pp to asmlist?
-	for(pp = asmlist, assem = asmlist; assem != nil; pp = assem, assem = assem->next){
+	for(pp = nil, assem = asmlist; assem != nil; pp = assem, assem = assem->next){
 		if(assem->type != type)
 			continue;
 		a = assem->addr;
@@ -233,6 +228,11 @@ asmalloc(uintmem addr, uintmem size, int type, int align)
 		if(assem->size == 0){
 			if(pp != nil)
 				pp->next = assem->next;
+			// Bug: What if assem == asmlist (first time in loop)
+			// Then when set assem=>next = asmfreelist, you destroy
+			// the asmlist.
+			// The code in here is typically Plan 9 sketchy.
+			// It only failed if the first asm was < 256 MiB
 			if (assem == asmlist)
 				asmlist = assem->next;
 			else

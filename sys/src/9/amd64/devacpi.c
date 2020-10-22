@@ -57,7 +57,7 @@ static Queue *acpiev;
 Dev acpidevtab;
 
 static uint16_t pm1status;
-static int v=1;
+static int v=0;
 /* Table of ACPI ports we own. We just burn 64k of bss here rather
  * than look them up in a function each time they're used. */
 static uint8_t acpiport[1<<16];
@@ -815,10 +815,8 @@ static Atable *parsemsct(Atable *parent, char *name, uint8_t *raw, size_t rawsiz
 	             sizeof(Msct) + nmdom * sizeof(Mdom));
 	msct = t->tbl;
 	msct->ndoms = l32get(raw + 40) + 1;
-	print("MSCT ndoms %d\n", msct->ndoms);
 	msct->nclkdoms = l32get(raw + 44) + 1;
 	msct->maxpa = l64get(raw + 48);
-	print("MSCT maxpa %#lx\n", msct->maxpa);
 	msct->ndoms = nmdom;
 	msct->dom = nil;
 	if (nmdom != 0)
