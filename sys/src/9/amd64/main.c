@@ -225,7 +225,7 @@ options(int argc, char* argv[])
 	}
 	vflag = dbgflg['v'];
 	nosmp = dbgflg['n'];
-	nosmp = 1;
+//	nosmp = 1;
 }
 
 void
@@ -380,7 +380,7 @@ nixsquids(void)
 
 	/* Not AC for now :-) */
 	numtcs = MACHMAX;
-	for(i = 1; i < MACHMAX; i++)
+	for(i = 1; i < 2/*MACHMAX*/; i++)
 		if((mach = sys->machptr[i]) != nil && mach->online){
 			/*
 			 * Inter-core calls. A ensure *mp->iccall and mp->icargs
@@ -731,6 +731,7 @@ if (1){	acpiinit(); hi("	acpiinit();\n");}
 
 	print("schedinit...\n");
 
+	print("NOT\n");
 	schedinit();
 }
 

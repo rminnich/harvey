@@ -284,6 +284,14 @@ static void catstuff(void)
 		}
 		print("%s:\n\r%s\n\r", files[i], dat);
 	}
+	ifd = open("#t/eia0", ORDWR);
+	if (ifd < 0) {
+		print("can't open eia0!!!\n");
+	//	exits("can't open eia0");
+		return;
+	}
+	print("open: ifd %d\n", ifd);
+	write(ifd, "ABCD\n", 5);
 	pid = fork();
 	if (pid) {
 		print("fork: %d\n", pid);
@@ -299,14 +307,6 @@ static void catstuff(void)
 	// can kill it any time if you're concerned about
 	// the overhead. It shows up as a child of init.
 	print("KID\n");
-	ifd = open("#t/eia0", ORDWR);
-	if (ifd < 0) {
-		print("can't open eia0!!!\n");
-		exits("can't open eia0");
-		return;
-	}
-	print("open: ifd %d\n", ifd);
-	write(ifd, "FUCK\n", 5);
 	while (1) {
 		sleep(100000);
 	}

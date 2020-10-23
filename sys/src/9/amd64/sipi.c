@@ -52,6 +52,8 @@ sipi(void)
 	 */
 	for(apicno = 0; apicno < Napic; apicno++){
 		apic = &xlapic[apicno];
+		if (apicno > 2)
+			continue;
 		if(!apic->useable || apic->Ioapic.addr || apic->Lapic.machno == 0)
 			continue;
 
@@ -92,7 +94,7 @@ sipi(void)
 		*p = 0;
 
 		nvramwrite(0x0f, 0x0a);
-		//print("APICSIPI: %d, %p\n", apicno, (void *)sipipa);
+		print("APICSIPI: %d, %p\n", apicno, (void *)sipipa);
 		apicsipi(apicno, sipipa);
 
 		for(i = 0; i < 1000; i++){
@@ -102,8 +104,8 @@ sipi(void)
 		}
 		nvramwrite(0x0f, 0x00);
 
-		/*DBG("mach %#p (%#p) apicid %d machno %2d %dMHz\n",
+		DBG("mach %#p (%#p) apicid %d machno %2d %dMHz\n",
 			mach, sys->machptr[mach->machno],
-			apicno, mach->machno, mach->cpumhz);*/
+			apicno, mach->machno, mach->cpumhz);
 	}
 }
